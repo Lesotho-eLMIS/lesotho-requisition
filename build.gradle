@@ -137,16 +137,16 @@ configurations {
     integrationTestRuntime.extendsFrom testRuntime
 }
 
-// task integrationTest(type: Test) {
-//     testClassesDirs = sourceSets.integrationTest.output.classesDirs
-//     classpath = sourceSets.integrationTest.runtimeClasspath
-//     testLogging {
-//         events "passed", "skipped", "failed"
-//         exceptionFormat = 'full'
-//     }
-//     mustRunAfter test
-//     environment 'BASE_URL', "http://localhost"
-// }
+task integrationTest(type: Test) {
+    testClassesDirs = sourceSets.integrationTest.output.classesDirs
+    classpath = sourceSets.integrationTest.runtimeClasspath
+    testLogging {
+        events "passed", "skipped", "failed"
+        exceptionFormat = 'full'
+    }
+    mustRunAfter test
+    environment 'BASE_URL', "http://localhost"
+}
 
 tasks.withType(Test) {
     reports.html.destination = file("${reporting.baseDir}/${name}")
@@ -238,16 +238,16 @@ tasks.withType(Pmd){
     }
 }
 
-// test {
-//     testLogging {
-//         events 'started', 'passed'
-//         exceptionFormat = 'full'
-//     }
-//     dependsOn checkstyleMain
-//     dependsOn checkstyleTest
-//     dependsOn pmdMain
-//     dependsOn pmdTest
-// }
+test {
+    testLogging {
+        events 'started', 'passed'
+        exceptionFormat = 'full'
+    }
+    dependsOn checkstyleMain
+    dependsOn checkstyleTest
+    dependsOn pmdMain
+    dependsOn pmdTest
+}
 
 bootRun {
     jvmArgs = ["-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"]
