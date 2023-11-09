@@ -8,13 +8,11 @@ plugins {
     id 'org.springframework.boot' version '2.2.2.RELEASE'
     id "org.flywaydb.flyway" version "6.0.8"
     id "org.sonarqube" version "2.6.2"
-    id "com.moowork.node" version "1.2.0"
-    id "io.freefair.lombok" version "4.1.6"
+    id "com.moowork.node" version "0.12"
 }
 
 apply plugin: 'java'
 apply plugin: 'idea'
-apply plugin: 'org.springframework.boot'
 apply plugin: 'io.spring.dependency-management'
 apply plugin: 'checkstyle'
 apply plugin: 'jacoco'
@@ -41,54 +39,54 @@ targetCompatibility = 1.8
 repositories {
     mavenCentral()
     jcenter()
-    maven { url "https://jaspersoft.jfrog.io/artifactory/third-party-ce-artifacts"}
     maven { url "http://jasperreports.sourceforge.net/maven2/" }
     maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
+    maven { url "https://jaspersoft.jfrog.io/artifactory/third-party-ce-artifacts"}
 }
 
 dependencies {
-    compile "com.fasterxml.jackson.datatype:jackson-datatype-hibernate5"
-    compile "com.fasterxml.jackson.datatype:jackson-datatype-jsr310"
-    compile "net.sf.jasperreports:jasperreports:6.5.1"
-    compile "org.apache.poi:poi:3.15"
-    compile "org.postgresql:postgresql:42.2.6"
-    compile "org.slf4j:slf4j-ext"
+    compile "org.springframework.boot:spring-boot-starter-web"
+    compile "org.springframework.boot:spring-boot-starter-data-rest"
     compile "org.springframework.boot:spring-boot-starter-data-jpa"
     compile "org.springframework.boot:spring-boot-starter-security"
-    compile "org.springframework.boot:spring-boot-starter-web"
     compile "org.springframework.security.oauth.boot:spring-security-oauth2-autoconfigure:2.2.2.RELEASE"
-    compile 'commons-io:commons-io:2.6'
-    compile 'org.apache.commons:commons-collections4:4.3'
-    compile 'org.apache.commons:commons-csv:1.7'
-    compile 'org.apache.commons:commons-lang3'
-    compile 'org.flywaydb:flyway-core'
-    compile 'org.hibernate:hibernate-java8'
-    compile 'org.jadira.usertype:usertype.core:7.0.0.CR1'
-    compile 'org.javers:javers-spring-boot-starter-sql:3.11.6'
-    compile 'org.joda:joda-money:0.12'
-    compile 'org.openlmis:openlmis-service-util:3.0.0'
-    compile 'org.springframework.boot:spring-boot-starter-data-redis'
     compile 'org.springframework:spring-context-support'
+    compile 'org.hibernate:hibernate-java8'
+    compile 'org.flywaydb:flyway-core'
+    compile 'org.openlmis:openlmis-service-util:3.0.0'
+
+    compile "org.projectlombok:lombok"
+    compile "org.postgresql:postgresql:42.0.0"
+    compile "com.google.guava:guava:18.0"
     compile 'org.webjars.npm:api-console:3.0.17'
-    compile 'redis.clients:jedis'
+    compile 'org.apache.commons:commons-lang3'
+    compile 'org.apache.commons:commons-csv:1.4'
+    compile 'org.apache.commons:commons-collections4:4.1'
+    compile 'commons-io:commons-io:2.5'
+    compile "com.fasterxml.jackson.datatype:jackson-datatype-jsr310"
+    compile "net.sf.jasperreports:jasperreports:6.5.1"
+    compile "org.slf4j:slf4j-ext"
+    compile "com.github.tomakehurst:wiremock:1.58"
 
     annotationProcessor 'org.projectlombok:lombok:1.18.10'
+    compile group: 'javax.interceptor', name: 'javax.interceptor-api', version: '1.2'
 
-    testCompile "be.joengenduvel.java.verifiers:to-string:1.0.2"
-    testCompile "com.github.tomakehurst:wiremock:1.58"
-    testCompile "com.jayway.restassured:rest-assured:2.7.0"
-    testCompile "guru.nidi.raml:raml-tester:0.8.15"
-    testCompile "org.raml:raml-parser:0.8.37"
     testCompile "junit:junit"
-    testCompile "nl.jqno.equalsverifier:equalsverifier:2.4"
-    testCompile "org.assertj:assertj-core"
-    testCompile "org.javassist:javassist:3.20.0-GA"
     testCompile "org.powermock:powermock-api-mockito2:2.0.4"
     testCompile "org.powermock:powermock-module-junit4:2.0.4"
     testCompile "org.springframework.boot:spring-boot-starter-test"
+    testCompile('org.flywaydb.flyway-test-extensions:flyway-spring-test:4.1.0')
+    testCompile 'org.springframework.security:spring-security-test'
     testCompile "org.springframework:spring-test"
-
     testAnnotationProcessor 'org.projectlombok:lombok:1.18.10'
+
+    testCompile "com.jayway.restassured:rest-assured:2.7.0"
+    testCompile "guru.nidi.raml:raml-tester:0.8.15"
+    testCompile "org.raml:raml-parser:0.8.37"
+    testCompile "nl.jqno.equalsverifier:equalsverifier:2.4"
+    testCompile "be.joengenduvel.java.verifiers:to-string:1.0.2"
+
+    runtime fileTree(dir: '/extensions/', include: '*.jar')
 }
 
 idea {
@@ -99,10 +97,10 @@ idea {
             xmlFile.asNode().component
                     .find { it.@name == 'CompilerConfiguration' }['annotationProcessing'][0]
                     .replaceNode {
-                annotationProcessing {
-                    profile(default: true, name: 'Default', useClasspath: 'true', enabled: true)
-                }
-            }
+                        annotationProcessing {
+                            profile(default: true, name: 'Default', useClasspath: 'true', enabled: true)
+                        }
+                    }
         }
     }
     module {
@@ -115,42 +113,20 @@ flyway {
     url = "$System.env.DATABASE_URL"
     user = "$System.env.POSTGRES_USER"
     password = "$System.env.POSTGRES_PASSWORD"
-    schemas = ['requisition']
+    schemas = ['stockmanagement']
     sqlMigrationPrefix = ''
     placeholderPrefix = '#['
     placeholderSuffix = ']'
 }
 
-sourceSets {
-    integrationTest {
-        java {
-            compileClasspath += main.output + test.output
-            runtimeClasspath += main.output + test.output
-            srcDir file('src/integration-test/java')
-        }
-        resources.srcDir file('src/integration-test/resources')
-    }
-}
 
-configurations {
-    integrationTestCompile.extendsFrom testCompile
-    integrationTestRuntime.extendsFrom testRuntime
-}
 
-task integrationTest(type: Test) {
-    testClassesDirs = sourceSets.integrationTest.output.classesDirs
-    classpath = sourceSets.integrationTest.runtimeClasspath
-    testLogging {
-        events "passed", "skipped", "failed"
-        exceptionFormat = 'full'
-    }
-    mustRunAfter test
-    environment 'BASE_URL', "http://localhost"
-}
+
 
 tasks.withType(Test) {
     reports.html.destination = file("${reporting.baseDir}/${name}")
     reports.junitXml.destination = file("${testResultsDir}/${name}")
+    environment 'BASE_URL', "http://localhost"
 }
 
 // Usage: gradle generateMigration [-PmigrationName=name_of_migration]
@@ -171,7 +147,7 @@ task generateMigration {
     }
 }
 
-task checkApiIsRaml(type:Exec) {
+task checkApiIsRaml(type: Exec) {
     executable "raml-cop"
     args "src/main/resources/api-definition.yaml"
 }
@@ -185,7 +161,7 @@ jacocoTestReport {
     group = "reporting"
     description = "Generate Jacoco coverage reports after running tests."
     reports {
-        xml.enabled true
+        xml.enabled false
         html.enabled true
         csv.enabled false
     }
@@ -204,34 +180,32 @@ sonarqube {
         if (branch && branch != 'master') {
             property "sonar.branch", branch
         }
-        property "sonar.projectName", "OpenLMIS Requisition"
-        property "sonar.projectKey", "org.sonarqube:openlmis-requisition"
+        property "sonar.projectName", "OpenLMIS Stock Management Service"
+        property "sonar.projectKey", "org.sonarqube:$rootProject.name"
+        property "sonar.projectVersion", version
         property "sonar.host.url", "http://sonar.openlmis.org"
         property "sonar.login", System.getenv("SONAR_LOGIN")
         property "sonar.password", System.getenv("SONAR_PASSWORD")
-        property "sonar.projectVersion", version
         property "sonar.java.coveragePlugin", "jacoco"
         //Tells SonarQube where the unit tests execution reports are
         property "sonar.junit.reportsPath", "build/test-results/test"
         //Tells SonarQube where the unit tests code coverage report is
         property "sonar.jacoco.reportPath", "build/jacoco/test.exec"
-        //Tells SonarQube where the integration tests code coverage report is
-        property "sonar.jacoco.itReportPath", "build/jacoco/integrationTest.exec"
-	    properties["sonar.tests"] += sourceSets.integrationTest.java
+
     }
 }
 
-project.tasks["sonarqube"].dependsOn integrationTest
+project.tasks["sonarqube"].dependsOn test
 
 pmd {
     toolVersion = '5.4.0'
-    consoleOutput= true
+    consoleOutput = true
     ignoreFailures = false
     ruleSetFiles = files("config/pmd/ruleset.xml")
     reportsDir = file("build/reports/pmd")
 }
 
-tasks.withType(Pmd){
+tasks.withType(Pmd) {
     reports {
         xml.enabled true
         html.enabled true
@@ -243,18 +217,20 @@ test {
         events 'started', 'passed'
         exceptionFormat = 'full'
     }
-    dependsOn checkstyleMain
-    dependsOn checkstyleTest
-    dependsOn pmdMain
-    dependsOn pmdTest
 }
 
-bootRun {
-    jvmArgs = ["-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"]
-}
+//enable the lines below if you need to debug spring running in docker
+//bootRun {
+//    jvmArgs = ["-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"]
+//}
 
 signing {
     sign configurations.archives
+}
+
+task javadocJar(type: Jar) {
+    classifier = 'javadoc'
+    from javadoc
 }
 
 task sourcesJar(type: Jar) {
@@ -268,7 +244,7 @@ task execJar(type: Jar) {
 }
 
 artifacts {
-    archives sourcesJar, execJar
+    archives javadocJar, sourcesJar, execJar
 }
 
 signArchives.onlyIf {project.findProperty("signing.keyId") && project.findProperty("signing.password")}
@@ -303,10 +279,9 @@ uploadArchives {
                     }
                 }
                 scm {
-                    connection = 'scm:git:git://github.com/OpenLMIS/openlmis-requisition.git'
-                    developerConnection = 'scm:git:ssh://github.com/OpenLMIS/openlmis-requisition' +
-                            '.git'
-                    url = 'http://github.com/OpenLMIS/openlmis-requisition/'
+                    connection = 'scm:git:git://github.com/OpenLMIS/openlmis-stockmanagement.git'
+                    developerConnection = 'scm:git:ssh://github.com/OpenLMIS/openlmis-stockmanagement.git'
+                    url = 'http://github.com/OpenLMIS/openlmis-stockmanagement/'
                 }
             }
         }
@@ -316,13 +291,11 @@ uploadArchives {
 uploadArchives.onlyIf { project.getProperty("ossrhUsername") && project.getProperty("ossrhPassword") }
 
 apply from: "documentation.gradle"
-integrationTest {
-    dependsOn ramlToHtml
-}
 
 processResources {
     // we want the generated HTML spec file included in the output jar
     finalizedBy ramlToHtml
+
     // update version information in build
     filesMatching('**/version.properties') {
         expand(project.properties)
@@ -330,7 +303,7 @@ processResources {
 }
 
 check {
-    dependsOn integrationTest
+    dependsOn checkApiIsRaml
     finalizedBy uploadArchives
 }
 
