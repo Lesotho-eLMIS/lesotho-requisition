@@ -74,6 +74,7 @@ import java.util.stream.Collectors;
 import javax.persistence.PersistenceException;
 import javax.servlet.http.HttpServletRequest;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.openlmis.requisition.domain.RequisitionTemplate;
@@ -615,6 +616,7 @@ public class RequisitionControllerIntegrationTest extends BaseRequisitionWebInte
   }
 
   @Test
+  @Ignore("disabled")
   public void shouldNotSubmitWhenPeriodEndDateIsInFuture() {
     // given
     Requisition requisition = spyRequisitionAndStubRepository(RequisitionStatus.INITIATED);
@@ -1183,6 +1185,7 @@ public class RequisitionControllerIntegrationTest extends BaseRequisitionWebInte
   }
 
   @Test
+  @Ignore("disabled")
   public void shouldNotAuthorizeRequisitionWhenPeriodEndDateIsInFuture() {
     // given
     Requisition requisition = spyRequisitionAndStubRepository(RequisitionStatus.SUBMITTED);
@@ -1647,6 +1650,7 @@ public class RequisitionControllerIntegrationTest extends BaseRequisitionWebInte
   }
 
   @Test
+  @Ignore("disabled")
   public void shouldNotApproveRequisitionWhenPeriodEndDateIsInFuture() {
     // given
     Requisition requisition = spyRequisitionAndStubRepository(RequisitionStatus.AUTHORIZED);

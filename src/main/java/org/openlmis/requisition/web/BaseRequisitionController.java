@@ -476,7 +476,7 @@ public abstract class BaseRequisitionController extends BaseController {
 
     if (requisition.getEmergency() != null && !requisition.getEmergency()) {
       LocalDate endDate = period.getEndDate();
-      if (dateHelper.isDateAfterNow(endDate)) {
+      if (dateHelper.isDateAfterNextThreeMonths(endDate)) {
         throw new ValidationMessageException(new Message(
             ERROR_PERIOD_END_DATE_WRONG, DateTimeFormatter.ISO_DATE.format(endDate)));
       }

@@ -43,6 +43,11 @@ public class DateHelper {
     return (date == null) || date.isAfter(getCurrentDateWithSystemZone());
   }
 
+  public boolean isDateAfterNextThreeMonths(LocalDate date) {
+    LocalDate futureDate = getCurrentDateWithSystemZone().plusMonths(3);
+    return (date == null) || date.isAfter(futureDate);
+  }
+
   /**
    * Obtains the current date from the system clock in the system time zone.
    * @return the current date using the system clock
