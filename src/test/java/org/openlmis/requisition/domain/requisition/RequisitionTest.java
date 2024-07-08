@@ -89,8 +89,6 @@ import org.openlmis.requisition.dto.SupplyLineDto;
 import org.openlmis.requisition.dto.VersionIdentityDto;
 import org.openlmis.requisition.dto.stockmanagement.StockCardRangeSummaryDto;
 import org.openlmis.requisition.exception.ValidationMessageException;
-import org.openlmis.requisition.service.PeriodService;
-import org.openlmis.requisition.service.RequisitionService;
 import org.openlmis.requisition.testutils.ApprovedProductDtoDataBuilder;
 import org.openlmis.requisition.testutils.DtoGenerator;
 import org.openlmis.requisition.testutils.OrderableDtoDataBuilder;
@@ -101,7 +99,6 @@ import org.openlmis.requisition.utils.Message;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
-import org.slf4j.profiler.Profiler;
 
 @PrepareForTest({LineItemFieldsCalculator.class})
 @RunWith(PowerMockRunner.class)
@@ -201,8 +198,7 @@ public class RequisitionTest {
     requisition.setStatus(RequisitionStatus.AUTHORIZED);
 
     // when
-    requisition.reject(orderables, UUID.randomUUID(), mock(ProcessingPeriodDto.class),
-        mock(RequisitionService.class), mock(PeriodService.class), mock(Profiler.class));
+    requisition.reject(orderables, UUID.randomUUID());
 
     // then
     assertEquals(requisition.getStatus(), RequisitionStatus.REJECTED);
@@ -212,8 +208,7 @@ public class RequisitionTest {
   public void shouldSubmitRequisitionIfItsStatusIsInitiated() {
     requisition.setTemplate(mock(RequisitionTemplate.class));
     requisition.setStatus(RequisitionStatus.INITIATED);
-    requisition.submit(orderables, UUID.randomUUID(), false, mock(ProcessingPeriodDto.class),
-        mock(RequisitionService.class), mock(PeriodService.class), mock(Profiler.class));
+    requisition.submit(orderables, UUID.randomUUID(), false);
 
     assertEquals(requisition.getStatus(), RequisitionStatus.SUBMITTED);
   }
@@ -222,9 +217,7 @@ public class RequisitionTest {
   public void shouldSubmitRequisitionIfItsStatusIsRejected() {
     requisition.setTemplate(mock(RequisitionTemplate.class));
     requisition.setStatus(RequisitionStatus.REJECTED);
-    requisition.submit(orderables, UUID.randomUUID(), false,
-        mock(ProcessingPeriodDto.class), mock(RequisitionService.class),
-        mock(PeriodService.class), mock(Profiler.class));
+    requisition.submit(orderables, UUID.randomUUID(), false);
 
     assertEquals(requisition.getStatus(), RequisitionStatus.SUBMITTED);
   }
@@ -233,9 +226,7 @@ public class RequisitionTest {
   public void shouldSubmitRequisitionAndMarkAsAuthorizedWhenAuthorizeIsSkipped() {
     requisition.setTemplate(mock(RequisitionTemplate.class));
     requisition.setStatus(RequisitionStatus.INITIATED);
-    requisition.submit(orderables, UUID.randomUUID(), true,
-        mock(ProcessingPeriodDto.class), mock(RequisitionService.class),
-        mock(PeriodService.class), mock(Profiler.class));
+    requisition.submit(orderables, UUID.randomUUID(), true);
 
     assertEquals(requisition.getStatus(), RequisitionStatus.AUTHORIZED);
   }
@@ -243,16 +234,12 @@ public class RequisitionTest {
   @Test
   public void shouldNotSubmitRegularRequisitionIfRegularFieldsNotFilled() {
     prepareRequisitionToHaveRequiredFieldStockOnHandNotFilled();
-    assertThatThrownBy(() -> requisition.submit(orderables, UUID.randomUUID(), false,
-        mock(ProcessingPeriodDto.class), mock(RequisitionService.class),
-        mock(PeriodService.class), mock(Profiler.class)))
+    assertThatThrownBy(() -> requisition.submit(orderables, UUID.randomUUID(), false))
         .isInstanceOf(ValidationMessageException.class)
         .hasMessage(getRequiredFieldErrorMessage(STOCK_ON_HAND, TOTAL_CONSUMED_QUANTITY));
 
     prepareRequisitionToHaveRequiredFieldTotalConsumedQuantityNotFilled();
-    assertThatThrownBy(() -> requisition.submit(orderables, UUID.randomUUID(), false,
-        mock(ProcessingPeriodDto.class), mock(RequisitionService.class),
-        mock(PeriodService.class), mock(Profiler.class)))
+    assertThatThrownBy(() -> requisition.submit(orderables, UUID.randomUUID(), false))
         .isInstanceOf(ValidationMessageException.class)
         .hasMessage(getRequiredFieldErrorMessage(TOTAL_CONSUMED_QUANTITY, STOCK_ON_HAND));
 
@@ -264,8 +251,7 @@ public class RequisitionTest {
     prepareRequisitionToHaveRequiredFieldStockOnHandNotFilled();
     requisition.setEmergency(true);
 
-    requisition.submit(orderables, UUID.randomUUID(), false, mock(ProcessingPeriodDto.class),
-        mock(RequisitionService.class), mock(PeriodService.class), mock(Profiler.class));
+    requisition.submit(orderables, UUID.randomUUID(), false);
 
     assertEquals(requisition.getStatus(), RequisitionStatus.SUBMITTED);
   }
@@ -274,8 +260,7 @@ public class RequisitionTest {
   public void shouldAuthorizeRequisitionIfItsStatusIsSubmitted() {
     requisition.setTemplate(mock(RequisitionTemplate.class));
     requisition.setStatus(RequisitionStatus.SUBMITTED);
-    requisition.authorize(orderables, UUID.randomUUID(), mock(ProcessingPeriodDto.class),
-        mock(RequisitionService.class), mock(PeriodService.class), mock(Profiler.class));
+    requisition.authorize(orderables, UUID.randomUUID());
 
     assertEquals(requisition.getStatus(), RequisitionStatus.AUTHORIZED);
   }
@@ -287,8 +272,7 @@ public class RequisitionTest {
     SupervisoryNodeDto parentNode = mockSupervisoryParentNode(UUID.randomUUID());
 
     requisition.approve(parentNode.getId(), orderables, Collections.emptyList(),
-        UUID.randomUUID(), mock(ProcessingPeriodDto.class),
-        mock(RequisitionService.class), mock(PeriodService.class), mock(Profiler.class));
+        UUID.randomUUID());
 
     assertEquals(requisition.getStatus(), RequisitionStatus.IN_APPROVAL);
   }
@@ -300,8 +284,7 @@ public class RequisitionTest {
     SupervisoryNodeDto parentNode = mockSupervisoryParentNode(UUID.randomUUID());
 
     requisition.approve(parentNode.getId(), orderables, Collections.emptyList(),
-        UUID.randomUUID(), mock(ProcessingPeriodDto.class),
-        mock(RequisitionService.class), mock(PeriodService.class), mock(Profiler.class));
+        UUID.randomUUID());
 
     assertEquals(requisition.getStatus(), RequisitionStatus.IN_APPROVAL);
   }
@@ -314,8 +297,7 @@ public class RequisitionTest {
     SupplyLineDto supplyLine = new SupplyLineDtoDataBuilder().buildAsDto();
 
     requisition.approve(parentNode.getId(), orderables,
-        Collections.singletonList(supplyLine), UUID.randomUUID(), mock(ProcessingPeriodDto.class),
-        mock(RequisitionService.class), mock(PeriodService.class), mock(Profiler.class));
+        Collections.singletonList(supplyLine), UUID.randomUUID());
 
     assertEquals(requisition.getStatus(), RequisitionStatus.APPROVED);
   }
@@ -328,8 +310,7 @@ public class RequisitionTest {
     SupplyLineDto supplyLine = new SupplyLineDtoDataBuilder().buildAsDto();
 
     requisition.approve(parentNode.getId(), orderables,
-        Collections.singletonList(supplyLine), UUID.randomUUID(), mock(ProcessingPeriodDto.class),
-        mock(RequisitionService.class), mock(PeriodService.class), mock(Profiler.class));
+        Collections.singletonList(supplyLine), UUID.randomUUID());
 
     assertEquals(requisition.getStatus(), RequisitionStatus.APPROVED);
   }
@@ -337,8 +318,7 @@ public class RequisitionTest {
   @Test(expected = ValidationMessageException.class)
   public void shouldThrowExceptionWhenAuthorizingRequisitionWithNotSubmittedStatus() {
     requisition.setTemplate(mock(RequisitionTemplate.class));
-    requisition.authorize(orderables, UUID.randomUUID(), mock(ProcessingPeriodDto.class),
-        mock(RequisitionService.class), mock(PeriodService.class), mock(Profiler.class));
+    requisition.authorize(orderables, UUID.randomUUID());
   }
 
   @Test
@@ -360,10 +340,8 @@ public class RequisitionTest {
     requisition.setTemplate(requisitionTemplate);
     requisition.setStatus(RequisitionStatus.SUBMITTED);
 
-    requisition.authorize(orderables, UUID.randomUUID(), mock(ProcessingPeriodDto.class),
-        mock(RequisitionService.class), mock(PeriodService.class), mock(Profiler.class));
-    requisition.updateFrom(mockNonStockmanagementRequisition(), orderables, approvedProducts,
-        true, null, null);
+    requisition.authorize(orderables, UUID.randomUUID());
+    requisition.updateFrom(new Requisition(), orderables, approvedProducts,true);
 
     assertEquals(requisition.getStatus(), RequisitionStatus.AUTHORIZED);
     verifyStatic(LineItemFieldsCalculator.class);
@@ -380,8 +358,7 @@ public class RequisitionTest {
 
     requisitionLineItem.setRequestedQuantity(null);
 
-    requisition.authorize(orderables, null, mock(ProcessingPeriodDto.class),
-        mock(RequisitionService.class), mock(PeriodService.class), mock(Profiler.class));
+    requisition.authorize(orderables, null);
 
     assertEquals(Integer.valueOf(CALCULATED_ORDER_QUANTITY),
         requisitionLineItem.getApprovedQuantity());
@@ -402,8 +379,7 @@ public class RequisitionTest {
     requisitionLineItem.setRequestedQuantity(null);
     requisitionLineItem.setCalculatedOrderQuantityIsa(100);
 
-    requisition.authorize(orderables, null, mock(ProcessingPeriodDto.class),
-        mock(RequisitionService.class), mock(PeriodService.class), mock(Profiler.class));
+    requisition.authorize(orderables, null);
 
     assertEquals(Integer.valueOf(100), requisitionLineItem.getApprovedQuantity());
   }
@@ -418,8 +394,7 @@ public class RequisitionTest {
 
     requisitionLineItem.setRequestedQuantity(null);
 
-    requisition.submit(orderables, null, true, mock(ProcessingPeriodDto.class),
-        mock(RequisitionService.class), mock(PeriodService.class), mock(Profiler.class));
+    requisition.submit(orderables, null, true);
 
     assertEquals(Integer.valueOf(CALCULATED_ORDER_QUANTITY),
         requisitionLineItem.getApprovedQuantity());
@@ -433,8 +408,7 @@ public class RequisitionTest {
     when(template.isColumnDisplayed(RequisitionLineItem.CALCULATED_ORDER_QUANTITY))
         .thenReturn(true);
 
-    requisition.authorize(orderables, null, mock(ProcessingPeriodDto.class),
-        mock(RequisitionService.class), mock(PeriodService.class), mock(Profiler.class));
+    requisition.authorize(orderables, null);
 
     assertEquals(Integer.valueOf(REQUESTED_QUANTITY), requisitionLineItem.getApprovedQuantity());
   }
@@ -449,8 +423,7 @@ public class RequisitionTest {
 
     requisitionLineItem.setRequestedQuantity(REQUESTED_QUANTITY);
 
-    requisition.authorize(orderables, null, mock(ProcessingPeriodDto.class),
-        mock(RequisitionService.class), mock(PeriodService.class), mock(Profiler.class));
+    requisition.authorize(orderables, null);
 
     assertEquals(Integer.valueOf(REQUESTED_QUANTITY), requisitionLineItem.getApprovedQuantity());
   }
@@ -469,8 +442,7 @@ public class RequisitionTest {
 
     requisitionLineItem.setRequestedQuantity(REQUESTED_QUANTITY);
 
-    requisition.authorize(orderables, null, mock(ProcessingPeriodDto.class),
-        mock(RequisitionService.class), mock(PeriodService.class), mock(Profiler.class));
+    requisition.authorize(orderables, null);
 
     assertEquals(Integer.valueOf(REQUESTED_QUANTITY), requisitionLineItem.getApprovedQuantity());
   }
@@ -487,8 +459,7 @@ public class RequisitionTest {
 
     requisitionLineItem.setRequestedQuantity(REQUESTED_QUANTITY);
 
-    requisition.authorize(orderables, null, mock(ProcessingPeriodDto.class),
-        mock(RequisitionService.class), mock(PeriodService.class), mock(Profiler.class));
+    requisition.authorize(orderables, null);
 
     assertEquals(Integer.valueOf(REQUESTED_QUANTITY), requisitionLineItem.getApprovedQuantity());
   }
@@ -503,8 +474,7 @@ public class RequisitionTest {
 
     requisitionLineItem.setRequestedQuantity(REQUESTED_QUANTITY);
 
-    requisition.authorize(orderables, null, mock(ProcessingPeriodDto.class),
-        mock(RequisitionService.class), mock(PeriodService.class), mock(Profiler.class));
+    requisition.authorize(orderables, null);
 
     assertEquals(Integer.valueOf(REQUESTED_QUANTITY), requisitionLineItem.getApprovedQuantity());
   }
@@ -519,8 +489,7 @@ public class RequisitionTest {
 
     requisitionLineItem.setRequestedQuantity(null);
 
-    requisition.authorize(orderables, null, mock(ProcessingPeriodDto.class),
-        mock(RequisitionService.class), mock(PeriodService.class), mock(Profiler.class));
+    requisition.authorize(orderables, null);
 
     assertNull(requisitionLineItem.getApprovedQuantity());
   }
@@ -541,8 +510,7 @@ public class RequisitionTest {
         Collections.singletonList(requisitionLineItem)));
 
     requisition.setTemplate(requisitionTemplate);
-    requisition.updateFrom(mockNonStockmanagementRequisition(), orderables, approvedProducts,
-        true, null, null);
+    requisition.updateFrom(new Requisition(), orderables, approvedProducts,true);
     verifyStatic(LineItemFieldsCalculator.class);
     LineItemFieldsCalculator.calculateStockOnHand(any(RequisitionLineItem.class));
   }
@@ -574,7 +542,7 @@ public class RequisitionTest {
     newRequisition.setRequisitionLineItems(Lists.newArrayList(fullSupply, nonFullSupply));
 
     requisition.setTemplate(mock(RequisitionTemplate.class));
-    requisition.updateFrom(newRequisition, orderables, approvedProducts,true, null, null);
+    requisition.updateFrom(newRequisition, orderables, approvedProducts,true);
 
     assertThat(requisition.getRequisitionLineItems(), hasSize(2));
   }
@@ -606,7 +574,7 @@ public class RequisitionTest {
     newRequisition.setRequisitionLineItems(Lists.newArrayList(nonFullSupply));
 
     requisition.setTemplate(mock(RequisitionTemplate.class));
-    requisition.updateFrom(newRequisition, orderables, approvedProducts, true, null, null);
+    requisition.updateFrom(newRequisition, orderables, approvedProducts, true);
 
     assertThat(requisition.getRequisitionLineItems(), hasSize(1));
   }
@@ -642,7 +610,6 @@ public class RequisitionTest {
     newRequisition.setRequisitionLineItems(
         Lists.newArrayList(firstRequisitionLineItem, secondRequisitionLineItem)
     );
-    newRequisition.setTemplate(template);
 
     newRequisition
         .getRequisitionLineItems()
@@ -657,7 +624,7 @@ public class RequisitionTest {
     // when
     requisition.setTemplate(template);
     requisition.setId(UUID.randomUUID());
-    requisition.updateFrom(newRequisition, orderables, approvedProducts, true, null, null);
+    requisition.updateFrom(newRequisition, orderables, approvedProducts, true);
 
     // then
     requisition
@@ -675,14 +642,8 @@ public class RequisitionTest {
     when(requisitionTemplate.isColumnDisplayed("stockOnHand")).thenReturn(false);
     when(requisitionTemplate.isColumnDisplayed(TOTAL_CONSUMED_QUANTITY)).thenReturn(false);
 
-    Requisition newRequisition = new Requisition();
-    when(requisitionTemplate.isPopulateStockOnHandFromStockCards()).thenReturn(false);
-    newRequisition.setTemplate(requisitionTemplate);
-
     requisition.setTemplate(requisitionTemplate);
-
-    requisition.updateFrom(newRequisition, orderables, approvedProducts,
-        true, null, null);
+    requisition.updateFrom(new Requisition(), orderables, approvedProducts, true);
 
     assertThat(requisitionLineItem.getStockOnHand(), is(nullValue()));
     assertThat(requisitionLineItem.getTotalConsumedQuantity(), is(nullValue()));
@@ -943,8 +904,7 @@ public class RequisitionTest {
     setUpTestUpdatePacksToShip(orderable, packsToShip);
 
     // when
-    requisition.submit(orderables, UUID.randomUUID(), false, mock(ProcessingPeriodDto.class),
-        mock(RequisitionService.class), mock(PeriodService.class), mock(Profiler.class));
+    requisition.submit(orderables, UUID.randomUUID(), false);
 
     // then
     assertEquals(packsToShip, requisitionLineItem.getPacksToShip().longValue());
@@ -960,8 +920,7 @@ public class RequisitionTest {
     requisition.setStatus(RequisitionStatus.SUBMITTED);
 
     // when
-    requisition.authorize(orderables, UUID.randomUUID(), mock(ProcessingPeriodDto.class),
-        mock(RequisitionService.class), mock(PeriodService.class), mock(Profiler.class));
+    requisition.authorize(orderables, UUID.randomUUID());
 
     // then
     assertEquals(packsToShip, requisitionLineItem.getPacksToShip().longValue());
@@ -976,8 +935,7 @@ public class RequisitionTest {
 
     // when
     requisition.approve(null, orderables, Collections.emptyList(),
-        UUID.randomUUID(), mock(ProcessingPeriodDto.class),
-        mock(RequisitionService.class), mock(PeriodService.class), mock(Profiler.class));
+        UUID.randomUUID());
 
     // then
     assertThat(requisition.getStatus(), is(RequisitionStatus.RELEASED_WITHOUT_ORDER));
@@ -994,9 +952,7 @@ public class RequisitionTest {
     requisition.setStatus(RequisitionStatus.AUTHORIZED);
 
     // when
-    requisition.approve(null, orderables, Collections.emptyList(), UUID.randomUUID(),
-        mock(ProcessingPeriodDto.class), mock(RequisitionService.class), mock(PeriodService.class),
-        mock(Profiler.class));
+    requisition.approve(null, orderables, Collections.emptyList(), UUID.randomUUID());
 
     // then
     assertEquals(packsToShip, requisitionLineItem.getPacksToShip().longValue());
@@ -1008,8 +964,7 @@ public class RequisitionTest {
     prepareForTestAdjustedConcumptionTotalCostAndAverageConsumption();
 
     //when
-    requisition.submit(orderables, UUID.randomUUID(), false, mock(ProcessingPeriodDto.class),
-        mock(RequisitionService.class), mock(PeriodService.class), mock(Profiler.class));
+    requisition.submit(orderables, UUID.randomUUID(), false);
 
     //then
     assertEquals(ADJUSTED_CONSUMPTION, requisitionLineItem.getAdjustedConsumption().longValue());
@@ -1024,8 +979,7 @@ public class RequisitionTest {
     requisition.setStatus(RequisitionStatus.AUTHORIZED);
 
     //when
-    requisition.reject(orderables, UUID.randomUUID(), mock(ProcessingPeriodDto.class),
-        mock(RequisitionService.class), mock(PeriodService.class), mock(Profiler.class));
+    requisition.reject(orderables, UUID.randomUUID());
 
     //then
     assertEquals(ADJUSTED_CONSUMPTION, requisitionLineItem.getAdjustedConsumption().longValue());
@@ -1044,8 +998,7 @@ public class RequisitionTest {
         .thenReturn(AVERAGE_CONSUMPTION);
 
     //when
-    requisition.submit(orderables, UUID.randomUUID(), false, mock(ProcessingPeriodDto.class),
-        mock(RequisitionService.class), mock(PeriodService.class), mock(Profiler.class));
+    requisition.submit(orderables, UUID.randomUUID(), false);
 
     //then
     assertEquals(ADJUSTED_CONSUMPTION, requisitionLineItem.getAdjustedConsumption().longValue());
@@ -1065,12 +1018,10 @@ public class RequisitionTest {
         .thenReturn(AVERAGE_CONSUMPTION);
 
     //when
-    requisition.submit(orderables, UUID.randomUUID(), false, mock(ProcessingPeriodDto.class),
-        mock(RequisitionService.class), mock(PeriodService.class), mock(Profiler.class));
+    requisition.submit(orderables, UUID.randomUUID(), false);
 
     //then
-    assertEquals(ADJUSTED_CONSUMPTION, requisitionLineItem.getAdjustedConsumption()
-        .longValue());
+    assertEquals(ADJUSTED_CONSUMPTION, requisitionLineItem.getAdjustedConsumption().longValue());
     assertEquals(AVERAGE_CONSUMPTION, requisitionLineItem.getAverageConsumption().longValue());
   }
 
@@ -1081,12 +1032,10 @@ public class RequisitionTest {
     requisition.setStatus(RequisitionStatus.SUBMITTED);
 
     //when
-    requisition.authorize(orderables, UUID.randomUUID(), mock(ProcessingPeriodDto.class),
-        mock(RequisitionService.class), mock(PeriodService.class), mock(Profiler.class));
+    requisition.authorize(orderables, UUID.randomUUID());
 
     //then
-    assertEquals(ADJUSTED_CONSUMPTION, requisitionLineItem.getAdjustedConsumption()
-        .longValue());
+    assertEquals(ADJUSTED_CONSUMPTION, requisitionLineItem.getAdjustedConsumption().longValue());
     assertEquals(AVERAGE_CONSUMPTION, requisitionLineItem.getAverageConsumption().longValue());
     assertEquals(TOTAL_COST, requisitionLineItem.getTotalCost());
   }
@@ -1099,20 +1048,17 @@ public class RequisitionTest {
 
     //when
     requisition.approve(null, orderables, Collections.emptyList(),
-        UUID.randomUUID(), mock(ProcessingPeriodDto.class),
-        mock(RequisitionService.class), mock(PeriodService.class), mock(Profiler.class));
+        UUID.randomUUID());
 
     //then
-    assertEquals(ADJUSTED_CONSUMPTION, requisitionLineItem.getAdjustedConsumption()
-        .longValue());
+    assertEquals(ADJUSTED_CONSUMPTION, requisitionLineItem.getAdjustedConsumption().longValue());
     assertEquals(AVERAGE_CONSUMPTION, requisitionLineItem.getAverageConsumption().longValue());
     assertEquals(TOTAL_COST, requisitionLineItem.getTotalCost());
   }
 
   @Test
   public void shouldSetPreviousAdjustedConsumptionsWhenOnePreviousRequisition() {
-    RequisitionLineItem previousRequisitionLineItem =
-        new RequisitionLineItem(requisitionLineItem);
+    RequisitionLineItem previousRequisitionLineItem = new RequisitionLineItem(requisitionLineItem);
     previousRequisitionLineItem.setAdjustedConsumption(5);
 
     Requisition previousRequisition = new Requisition();
@@ -1128,8 +1074,7 @@ public class RequisitionTest {
 
   @Test
   public void shouldSetPreviousAdjustedConsumptionsFromManyPreviousRequisitions() {
-    RequisitionLineItem previousRequisitionLineItem =
-        new RequisitionLineItem(requisitionLineItem);
+    RequisitionLineItem previousRequisitionLineItem = new RequisitionLineItem(requisitionLineItem);
     previousRequisitionLineItem.setAdjustedConsumption(5);
 
     Requisition previousRequisition = new Requisition();
@@ -1167,8 +1112,7 @@ public class RequisitionTest {
   @Test
   public void shouldNotAddPreviousAdjustedConsumptionIfItIsNull() {
     //given
-    RequisitionLineItem previousRequisitionLineItem =
-        new RequisitionLineItem(requisitionLineItem);
+    RequisitionLineItem previousRequisitionLineItem = new RequisitionLineItem(requisitionLineItem);
     previousRequisitionLineItem.setAdjustedConsumption(null);
 
     Requisition previousRequisition = new Requisition();
@@ -1199,11 +1143,9 @@ public class RequisitionTest {
 
     RequisitionTemplate requisitionTemplate = mock(RequisitionTemplate.class);
     requisition.setTemplate(requisitionTemplate);
-    newRequisition.setTemplate(requisitionTemplate);
-    requisition.updateFrom(newRequisition, orderables, approvedProducts, true, null, null);
+    requisition.updateFrom(newRequisition, orderables, approvedProducts, true);
 
-    assertEquals(Integer.valueOf(1), requisitionLineItem.getPreviousAdjustedConsumptions()
-        .get(0));
+    assertEquals(Integer.valueOf(1), requisitionLineItem.getPreviousAdjustedConsumptions().get(0));
   }
 
   @Test
@@ -1225,8 +1167,7 @@ public class RequisitionTest {
     Requisition requisition = createRequisitionWithStatusOf(RequisitionStatus.INITIATED);
     requisition.setTemplate(template);
 
-    requisition.submit(orderables, submitterId, false, mock(ProcessingPeriodDto.class),
-        mock(RequisitionService.class), mock(PeriodService.class), mock(Profiler.class));
+    requisition.submit(orderables, submitterId, false);
 
     assertStatusChangeExistsAndAuthorIdMatches(requisition, RequisitionStatus.SUBMITTED,
         submitterId);
@@ -1239,8 +1180,7 @@ public class RequisitionTest {
     requisition.setTemplate(template);
     requisition.setRequisitionLineItems(Collections.emptyList());
 
-    requisition.submit(orderables, submitterId, true, mock(ProcessingPeriodDto.class),
-        mock(RequisitionService.class), mock(PeriodService.class), mock(Profiler.class));
+    requisition.submit(orderables, submitterId, true);
 
     assertStatusChangeExistsAndAuthorIdMatches(requisition, RequisitionStatus.SUBMITTED,
         submitterId);
@@ -1255,8 +1195,7 @@ public class RequisitionTest {
     requisition.setTemplate(template);
     requisition.setRequisitionLineItems(Collections.emptyList());
 
-    requisition.authorize(orderables, authorizerId, mock(ProcessingPeriodDto.class),
-        mock(RequisitionService.class), mock(PeriodService.class), mock(Profiler.class));
+    requisition.authorize(orderables, authorizerId);
 
     assertStatusChangeExistsAndAuthorIdMatches(requisition, RequisitionStatus.AUTHORIZED,
         authorizerId);
@@ -1269,9 +1208,7 @@ public class RequisitionTest {
     requisition.setTemplate(template);
     requisition.setRequisitionLineItems(Collections.emptyList());
 
-    requisition.approve(null, orderables, Collections.emptyList(), approverId,
-        mock(ProcessingPeriodDto.class), mock(RequisitionService.class), mock(PeriodService.class),
-        mock(Profiler.class));
+    requisition.approve(null, orderables, Collections.emptyList(), approverId);
 
     assertStatusChangeExistsAndAuthorIdMatches(requisition, RequisitionStatus.APPROVED,
         approverId);
@@ -1283,8 +1220,7 @@ public class RequisitionTest {
     Requisition requisition = createRequisitionWithStatusOf(RequisitionStatus.AUTHORIZED);
     requisition.setTemplate(template);
 
-    requisition.reject(orderables, rejectorId, mock(ProcessingPeriodDto.class),
-        mock(RequisitionService.class), mock(PeriodService.class), mock(Profiler.class));
+    requisition.reject(orderables, rejectorId);
 
     assertStatusChangeExistsAndAuthorIdMatches(requisition, RequisitionStatus.REJECTED,
         rejectorId);
@@ -1713,8 +1649,7 @@ public class RequisitionTest {
     requisitionLineItem.setCalculatedOrderQuantityIsa(689);
 
     //when
-    requisition.submit(orderables, UUID.randomUUID(), true, mock(ProcessingPeriodDto.class),
-        mock(RequisitionService.class), mock(PeriodService.class), mock(Profiler.class));
+    requisition.submit(orderables, UUID.randomUUID(), true);
 
     //then
     assertEquals(
@@ -1736,8 +1671,7 @@ public class RequisitionTest {
     requisitionLineItem.setCalculatedOrderQuantityIsa(689);
 
     //when
-    requisition.authorize(orderables, UUID.randomUUID(), mock(ProcessingPeriodDto.class),
-        mock(RequisitionService.class), mock(PeriodService.class), mock(Profiler.class));
+    requisition.authorize(orderables, UUID.randomUUID());
 
     //then
     assertEquals(
@@ -1747,12 +1681,13 @@ public class RequisitionTest {
   }
 
   private Requisition updateWithDatePhysicalCountCompleted(boolean updateStockDate) {
-    Requisition requisition = mockNonStockmanagementRequisition();
+    RequisitionTemplate requisitionTemplate = mock(RequisitionTemplate.class);
+    this.requisition.setTemplate(requisitionTemplate);
+
+    Requisition requisition = new Requisition();
     requisition.setDatePhysicalStockCountCompleted(
         new DatePhysicalStockCountCompleted(LocalDate.now()));
-
-    this.requisition.updateFrom(requisition, orderables, approvedProducts, updateStockDate, null,
-        null);
+    this.requisition.updateFrom(requisition, orderables, approvedProducts, updateStockDate);
 
     return requisition;
   }
@@ -1874,8 +1809,7 @@ public class RequisitionTest {
     return item;
   }
 
-  private Requisition getRequisition(RequisitionLineItem notSkipped,
-                                     RequisitionLineItem skipped) {
+  private Requisition getRequisition(RequisitionLineItem notSkipped, RequisitionLineItem skipped) {
     return new RequisitionDataBuilder()
         .withProgramId(requisition.getProgramId())
         .addLineItem(notSkipped, false)
@@ -1914,14 +1848,6 @@ public class RequisitionTest {
     requisition.setTemplate(template);
   }
 
-  private Requisition mockNonStockmanagementRequisition() {
-    Requisition newRequisition = mock(Requisition.class);
-    RequisitionTemplate newRequisitionTemplate = mock(RequisitionTemplate.class);
-    when(newRequisition.getTemplate()).thenReturn(newRequisitionTemplate);
-    when(newRequisitionTemplate.isPopulateStockOnHandFromStockCards()).thenReturn(false);
-    return newRequisition;
-  }
-
   private RequisitionTemplate mockStockBasedRequisitionTemplate() {
     RequisitionTemplate requisitionTemplate = mock(RequisitionTemplate.class);
 
@@ -1934,10 +1860,8 @@ public class RequisitionTest {
     when(requisitionTemplate.isColumnStockBased(TOTAL_LOSSES_AND_ADJUSTMENTS)).thenReturn(true);
     when(requisitionTemplate.isColumnStockBased(TOTAL_STOCKOUT_DAYS)).thenReturn(true);
 
-    when(requisitionTemplate.findColumn(TOTAL_CONSUMED_QUANTITY))
-        .thenReturn(totalConsumedQuantity);
-    when(requisitionTemplate.findColumn(TOTAL_RECEIVED_QUANTITY))
-        .thenReturn(totalReceivedQuantity);
+    when(requisitionTemplate.findColumn(TOTAL_CONSUMED_QUANTITY)).thenReturn(totalConsumedQuantity);
+    when(requisitionTemplate.findColumn(TOTAL_RECEIVED_QUANTITY)).thenReturn(totalReceivedQuantity);
     when(requisitionTemplate.findColumn(TOTAL_LOSSES_AND_ADJUSTMENTS))
         .thenReturn(totalLossesAndAdjustments);
     when(requisitionTemplate.findColumn(TOTAL_STOCKOUT_DAYS)).thenReturn(totalStockoutDays);

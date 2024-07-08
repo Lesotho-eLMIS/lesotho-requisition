@@ -71,18 +71,13 @@ import org.openlmis.requisition.domain.requisition.StatusChange;
 import org.openlmis.requisition.domain.requisition.StockAdjustment;
 import org.openlmis.requisition.domain.requisition.StockAdjustmentDataBuilder;
 import org.openlmis.requisition.dto.OrderableDto;
-import org.openlmis.requisition.dto.ProcessingPeriodDto;
 import org.openlmis.requisition.dto.VersionIdentityDto;
 import org.openlmis.requisition.repository.custom.DefaultRequisitionSearchParams;
 import org.openlmis.requisition.repository.custom.RequisitionSearchParams;
-import org.openlmis.requisition.service.PeriodService;
-import org.openlmis.requisition.service.RequisitionService;
 import org.openlmis.requisition.testutils.AvailableRequisitionColumnDataBuilder;
 import org.openlmis.requisition.testutils.DefaultRequisitionSearchParamsDataBuilder;
-import org.openlmis.requisition.testutils.ProcessingPeriodDtoDataBuilder;
 import org.openlmis.requisition.testutils.StatusChangeDataBuilder;
 import org.openlmis.requisition.utils.Pagination;
-import org.slf4j.profiler.Profiler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -99,17 +94,8 @@ public class RequisitionRepositoryIntegrationTest
   private Pageable pageRequest = PageRequest.of(
       Pagination.DEFAULT_PAGE_NUMBER, Pagination.NO_PAGINATION);
 
-  private Profiler profiler;
-
   @Autowired
   private AvailableRequisitionColumnRepository availableRequisitionColumnRepository;
-
-  @Autowired
-  private RequisitionService requisitionService;
-
-  @Autowired
-  private PeriodService periodService;
-
 
   @Before
   public void setUp() {
@@ -118,7 +104,6 @@ public class RequisitionRepositoryIntegrationTest
     for (int count = 0; count < 5; ++count) {
       requisitions.add(repository.save(generateInstance()));
     }
-    profiler = new Profiler("TEST_PROFILER");
   }
 
   @Test
@@ -643,65 +628,10 @@ public class RequisitionRepositoryIntegrationTest
 
     // when
     Page<Requisition> results = repository
-        .searchApprovableRequisitionsByProgramSupervisoryNodePairs(programNodePairs, null, null,
-            pageRequest);
+        .searchApprovableRequisitionsByProgramSupervisoryNodePairs(programNodePairs, pageRequest);
 
     // then
     assertEquals(2, results.getTotalElements());
-  }
-
-  @Test
-  public void searchByProgramSupervisoryNodePairsShouldFindIfIdsAndStatusAndFacilityMatch() {
-    // given
-    UUID programId = UUID.randomUUID();
-    UUID supervisoryNodeId = UUID.randomUUID();
-    UUID facilityId = UUID.randomUUID();
-
-    Requisition matchingRequisition1 = requisitions.get(0);
-    matchingRequisition1.setProgramId(programId);
-    matchingRequisition1.setSupervisoryNodeId(supervisoryNodeId);
-    matchingRequisition1.setStatus(RequisitionStatus.AUTHORIZED);
-    matchingRequisition1.setFacilityId(facilityId);
-
-    // simulation that the requisition has been rejected 3 times
-    matchingRequisition1
-        .getStatusChanges()
-        .add(new StatusChangeDataBuilder()
-            .forAuthorizedRequisition(matchingRequisition1)
-            .buildAsNew());
-    saveAndFlushWithDelay(matchingRequisition1);
-
-    matchingRequisition1
-        .getStatusChanges()
-        .add(new StatusChangeDataBuilder()
-            .forAuthorizedRequisition(matchingRequisition1)
-            .buildAsNew());
-    saveAndFlushWithDelay(matchingRequisition1);
-
-    matchingRequisition1
-        .getStatusChanges()
-        .add(new StatusChangeDataBuilder()
-            .forAuthorizedRequisition(matchingRequisition1)
-            .buildAsNew());
-    saveAndFlushWithDelay(matchingRequisition1);
-
-    matchingRequisition1
-        .getStatusChanges()
-        .add(new StatusChangeDataBuilder()
-            .forAuthorizedRequisition(matchingRequisition1)
-            .buildAsNew());
-    saveAndFlushWithDelay(matchingRequisition1);
-
-    Set<Pair<UUID, UUID>> programNodePairs =
-        singleton(new ImmutablePair<>(programId, supervisoryNodeId));
-
-    // when
-    Page<Requisition> results = repository
-        .searchApprovableRequisitionsByProgramSupervisoryNodePairs(programNodePairs, facilityId,
-            null, pageRequest);
-
-    // then
-    assertEquals(1, results.getTotalElements());
   }
 
   @Test
@@ -756,7 +686,7 @@ public class RequisitionRepositoryIntegrationTest
     // when
     Page<Requisition> results = repository
         .searchApprovableRequisitionsByProgramSupervisoryNodePairs(
-            programNodePairs, null, null, sortPageRequest);
+            programNodePairs, sortPageRequest);
 
     // then
     assertEquals(2, results.getTotalElements());
@@ -780,9 +710,6 @@ public class RequisitionRepositoryIntegrationTest
     UUID supervisoryNodeId = UUID.randomUUID();
     final UUID user = UUID.randomUUID();
     final Map<VersionIdentityDto, OrderableDto> products = emptyMap();
-
-    final ProcessingPeriodDto period = new ProcessingPeriodDtoDataBuilder()
-        .buildAsDto();
 
     Requisition matchingRequisition1 = requisitions.get(0);
     matchingRequisition1.setProgramId(programId);
@@ -808,53 +735,41 @@ public class RequisitionRepositoryIntegrationTest
     //    to verify that the latest authorized status change is used for comparison
     // 2) we have to save requisitions after each status change because the createdDate field
     //    is set by hibernate - because of @PrePersist annotation in the BaseTimestampedEntity
-    matchingRequisition1.submit(
-        products, user, false, period, requisitionService, periodService, profiler);
+    matchingRequisition1.submit(products, user, false);
     saveAndFlushWithDelay(matchingRequisition1);
 
-    matchingRequisition2.submit(
-        products, user, false, period, requisitionService, periodService, profiler);
+    matchingRequisition2.submit(products, user, false);
     saveAndFlushWithDelay(matchingRequisition2);
 
-    matchingRequisition3.submit(
-        products, user, false, period, requisitionService, periodService, profiler);
+    matchingRequisition3.submit(products, user, false);
     saveAndFlushWithDelay(matchingRequisition3);
 
-    matchingRequisition1.authorize(
-        products, user, period, requisitionService, periodService, profiler);
+    matchingRequisition1.authorize(products, user);
     saveAndFlushWithDelay(matchingRequisition1);
 
-    matchingRequisition2.authorize(
-        products, user, period, requisitionService, periodService, profiler);
+    matchingRequisition2.authorize(products, user);
     saveAndFlushWithDelay(matchingRequisition2);
 
-    matchingRequisition3.authorize(
-        products, user, period, requisitionService, periodService, profiler);
+    matchingRequisition3.authorize(products, user);
     saveAndFlushWithDelay(matchingRequisition3);
 
-    matchingRequisition2.reject(
-        products, user, period, requisitionService, periodService, profiler);
+    matchingRequisition2.reject(products, user);
     saveAndFlushWithDelay(matchingRequisition2);
 
-    matchingRequisition3.reject(
-        products, user, period, requisitionService, periodService, profiler);
+    matchingRequisition3.reject(products, user);
     saveAndFlushWithDelay(matchingRequisition3);
 
-    matchingRequisition3.submit(
-        products, user, false, period, requisitionService, periodService, profiler);
+    matchingRequisition3.submit(products, user, false);
     saveAndFlushWithDelay(matchingRequisition3);
 
-    matchingRequisition2.submit(
-        products, user, false, period, requisitionService, periodService, profiler);
+    matchingRequisition2.submit(products, user, false);
     saveAndFlushWithDelay(matchingRequisition2);
 
-    matchingRequisition3.authorize(
-        products, user, period, requisitionService, periodService, profiler);
+    matchingRequisition3.authorize(products, user);
     matchingRequisition3.setSupervisoryNodeId(supervisoryNodeId);
     saveAndFlushWithDelay(matchingRequisition3);
 
-    matchingRequisition2.authorize(
-        products, user, period, requisitionService, periodService, profiler);
+    matchingRequisition2.authorize(products, user);
     matchingRequisition2.setSupervisoryNodeId(supervisoryNodeId);
     saveAndFlushWithDelay(matchingRequisition2);
 
@@ -870,7 +785,7 @@ public class RequisitionRepositoryIntegrationTest
     // when
     Page<Requisition> results = repository
         .searchApprovableRequisitionsByProgramSupervisoryNodePairs(
-            programNodePairs, null, null, sortPageRequest);
+            programNodePairs, sortPageRequest);
 
     // then
     assertEquals(3, results.getTotalElements());
@@ -925,8 +840,7 @@ public class RequisitionRepositoryIntegrationTest
 
     // when
     Page<Requisition> results = repository
-        .searchApprovableRequisitionsByProgramSupervisoryNodePairs(programNodePairs, null, null,
-            pageRequest);
+        .searchApprovableRequisitionsByProgramSupervisoryNodePairs(programNodePairs, pageRequest);
 
     // then
     assertEquals(0, results.getTotalElements());
@@ -954,8 +868,7 @@ public class RequisitionRepositoryIntegrationTest
 
     // when
     Page<Requisition> results = repository
-        .searchApprovableRequisitionsByProgramSupervisoryNodePairs(programNodePairs, null, null,
-            pageRequest);
+        .searchApprovableRequisitionsByProgramSupervisoryNodePairs(programNodePairs, pageRequest);
 
     // then
     assertEquals(0, results.getTotalElements());
@@ -978,8 +891,7 @@ public class RequisitionRepositoryIntegrationTest
 
     // when
     Page<Requisition> results = repository
-        .searchApprovableRequisitionsByProgramSupervisoryNodePairs(programNodePairs, null, null,
-            pageRequest);
+        .searchApprovableRequisitionsByProgramSupervisoryNodePairs(programNodePairs, pageRequest);
 
     // then
     assertThat(results.getContent(), hasSize(1));
@@ -1215,86 +1127,6 @@ public class RequisitionRepositoryIntegrationTest
 
     // then
     assertThat(result, is(false));
-  }
-
-  @Test
-  public void countByProgramSupervisoryNodePairsShouldFindIfIdsAndStatusMatch() {
-    // given
-    UUID programId = UUID.randomUUID();
-    UUID supervisoryNodeId = UUID.randomUUID();
-
-    Requisition matchingRequisition1 = requisitions.get(0);
-    matchingRequisition1.setProgramId(programId);
-    matchingRequisition1.setSupervisoryNodeId(supervisoryNodeId);
-    matchingRequisition1.setStatus(RequisitionStatus.AUTHORIZED);
-
-    // simulation that the requisition has been rejected 3 times
-    matchingRequisition1
-        .getStatusChanges()
-        .add(new StatusChangeDataBuilder()
-            .forAuthorizedRequisition(matchingRequisition1)
-            .buildAsNew());
-    saveAndFlushWithDelay(matchingRequisition1);
-
-    matchingRequisition1
-        .getStatusChanges()
-        .add(new StatusChangeDataBuilder()
-            .forAuthorizedRequisition(matchingRequisition1)
-            .buildAsNew());
-    saveAndFlushWithDelay(matchingRequisition1);
-
-    matchingRequisition1
-        .getStatusChanges()
-        .add(new StatusChangeDataBuilder()
-            .forAuthorizedRequisition(matchingRequisition1)
-            .buildAsNew());
-    saveAndFlushWithDelay(matchingRequisition1);
-
-    matchingRequisition1
-        .getStatusChanges()
-        .add(new StatusChangeDataBuilder()
-            .forAuthorizedRequisition(matchingRequisition1)
-            .buildAsNew());
-    saveAndFlushWithDelay(matchingRequisition1);
-
-    Requisition matchingRequisition2 = requisitions.get(1);
-    matchingRequisition2.setProgramId(programId);
-    matchingRequisition2.setSupervisoryNodeId(supervisoryNodeId);
-    matchingRequisition2.setStatus(RequisitionStatus.IN_APPROVAL);
-
-    // simulation that the requisition has been rejected 2 times
-    matchingRequisition2
-        .getStatusChanges()
-        .add(new StatusChangeDataBuilder()
-            .forAuthorizedRequisition(matchingRequisition2)
-            .buildAsNew());
-    saveAndFlushWithDelay(matchingRequisition2);
-
-    matchingRequisition2
-        .getStatusChanges()
-        .add(new StatusChangeDataBuilder()
-            .forAuthorizedRequisition(matchingRequisition2)
-            .buildAsNew());
-    saveAndFlushWithDelay(matchingRequisition2);
-
-    matchingRequisition2
-        .getStatusChanges()
-        .add(new StatusChangeDataBuilder()
-            .forAuthorizedRequisition(matchingRequisition2)
-            .buildAsNew());
-    saveAndFlushWithDelay(matchingRequisition2);
-
-    repository.save(matchingRequisition2);
-
-    Set<Pair<UUID, UUID>> programNodePairs =
-        singleton(new ImmutablePair<>(programId, supervisoryNodeId));
-
-    // when
-    long result = repository
-        .countApprovableRequisitionsByProgramSupervisoryNodePairs(programNodePairs);
-
-    // then
-    assertEquals(2L, result);
   }
 
   private RequisitionLineItem generateLineItem(Requisition requisition) {

@@ -20,8 +20,6 @@ import static org.openlmis.requisition.TestDataInitializer.COLUMNS_MAPS_TABLE;
 import static org.openlmis.requisition.TestDataInitializer.JASPER_TEMPLATES_TABLE;
 import static org.openlmis.requisition.TestDataInitializer.JASPER_TEMPLATE_PARAMETER_DEPENDENCIES_TABLE;
 import static org.openlmis.requisition.TestDataInitializer.PREVIOUS_ADJUSTED_CONSUMPTIONS_TABLE;
-import static org.openlmis.requisition.TestDataInitializer.REJECTION_REASONS_TABLE;
-import static org.openlmis.requisition.TestDataInitializer.REJECTION_REASON_CATEGORIES_TABLE;
 import static org.openlmis.requisition.TestDataInitializer.REQUISITIONS_TABLE;
 import static org.openlmis.requisition.TestDataInitializer.REQUISITION_LINE_ITEMS_TABLE;
 import static org.openlmis.requisition.TestDataInitializer.REQUISITION_TEMPLATES_TABLE;
@@ -85,12 +83,6 @@ public class TestDataInitializerTest {
   private Resource templateParametersResource;
 
   @Mock
-  private Resource rejectionReasonCategoriesResource;
-
-  @Mock
-  private Resource rejectionReasonsResource;
-
-  @Mock
   private Resource generateRequisitionPermissionStringsResource;
 
   @Mock
@@ -123,9 +115,6 @@ public class TestDataInitializerTest {
         .insertToDbFromCsv(STOCK_ADJUSTMENT_REASONS_TABLE, stockAdjustmentReasonsResource);
     verify(loader).insertToDbFromCsv(STOCK_ADJUSTMENTS_TABLE, stockAdjustmentsResource);
     verify(loader).insertToDbFromCsv(TEMPLATE_PARAMETERS_TABLE, templateParametersResource);
-    verify(loader).insertToDbFromCsv(
-            REJECTION_REASON_CATEGORIES_TABLE, rejectionReasonCategoriesResource);
-    verify(loader).insertToDbFromCsv(REJECTION_REASONS_TABLE, rejectionReasonsResource);
 
     verify(template).update("DELETE FROM requisition.requisition_permission_strings;");
     verify(loader).updateDbFromSqlSingle(generateRequisitionPermissionStringsResource);

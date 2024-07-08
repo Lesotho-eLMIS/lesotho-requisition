@@ -22,7 +22,6 @@ import java.util.UUID;
 import org.apache.commons.lang3.tuple.Pair;
 import org.openlmis.requisition.domain.requisition.Requisition;
 import org.openlmis.requisition.domain.requisition.RequisitionPeriod;
-import org.openlmis.requisition.domain.requisition.RequisitionStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -35,12 +34,6 @@ public interface RequisitionRepositoryCustom {
   List<Requisition> searchRequisitions(UUID processingPeriod,
       UUID facility, UUID program, Boolean emergency);
 
-  Long countRequisitions(UUID processingPeriod, UUID facility, UUID program, Boolean emergency,
-      RequisitionStatus status);
-
-  Long countRequisitions(List<UUID> processingPeriods, UUID facility, List<UUID> programs,
-      Boolean emergency, List<RequisitionStatus> statuses);
-
   Optional<Requisition> findRegularRequisition(UUID processingPeriod, UUID facility, UUID program);
 
   List<RequisitionPeriod> searchRequisitionIdAndStatusPairs(UUID facility, UUID program,
@@ -50,8 +43,5 @@ public interface RequisitionRepositoryCustom {
       Set<Pair<UUID, UUID>> programSupervisoryNodePair, Pageable pageable);
 
   Page<Requisition> searchApprovableRequisitionsByProgramSupervisoryNodePairs(
-      Set<Pair<UUID, UUID>> programNodePairs, UUID facilityId, UUID periodId, Pageable pageable);
-
-  Long countApprovableRequisitionsByProgramSupervisoryNodePairs(
-      Set<Pair<UUID, UUID>> programNodePairs);
+      Set<Pair<UUID, UUID>> programNodePairs, Pageable pageable);
 }
