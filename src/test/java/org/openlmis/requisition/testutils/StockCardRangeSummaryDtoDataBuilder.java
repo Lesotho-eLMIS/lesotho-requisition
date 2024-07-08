@@ -58,11 +58,6 @@ public class StockCardRangeSummaryDtoDataBuilder implements
     return this;
   }
 
-  public StockCardRangeSummaryDtoDataBuilder withAmount(Integer amount) {
-    this.amount = amount;
-    return this;
-  }
-
   /**
    * Sets orderable reference object with given id.
    */

@@ -303,11 +303,6 @@ public class RequisitionDataBuilder implements DataBuilder<Requisition>,
     return this;
   }
 
-  public RequisitionDataBuilder withPreviousRequisitions(List<Requisition> previousRequisitions) {
-    this.previousRequisitions = previousRequisitions;
-    return this;
-  }
-
   /**
    * Sets stock adjustment reasons.
    */

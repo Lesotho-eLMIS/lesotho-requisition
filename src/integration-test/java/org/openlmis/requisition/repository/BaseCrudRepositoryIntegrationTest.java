@@ -31,7 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
-@ActiveProfiles({"test", "test-run"})
+@ActiveProfiles("test")
 @Transactional
 public abstract class BaseCrudRepositoryIntegrationTest<T extends BaseEntity> {
 

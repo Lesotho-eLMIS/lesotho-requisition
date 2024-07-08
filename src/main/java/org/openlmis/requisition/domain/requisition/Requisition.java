@@ -104,9 +104,7 @@ import org.openlmis.requisition.dto.VersionIdentityDto;
 import org.openlmis.requisition.dto.stockmanagement.StockCardRangeSummaryDto;
 import org.openlmis.requisition.errorhandling.ValidationResult;
 import org.openlmis.requisition.exception.ValidationMessageException;
-import org.openlmis.requisition.service.PeriodService;
 import org.openlmis.requisition.service.PermissionService;
-import org.openlmis.requisition.service.RequisitionService;
 import org.openlmis.requisition.utils.Message;
 import org.slf4j.ext.XLogger;
 import org.slf4j.ext.XLoggerFactory;
@@ -392,15 +390,14 @@ public class Requisition extends BaseTimestampedEntity {
    * @param products               Collection of orderables.
    */
   public void updateFrom(Requisition requisition, Map<VersionIdentityDto, OrderableDto> products,
-                         Map<VersionIdentityDto, ApprovedProductDto> approvedProducts,
-                         boolean isDatePhysicalStockCountCompletedEnabled,
-                         RequisitionService requisitionService, PeriodService periodService) {
+      Map<VersionIdentityDto, ApprovedProductDto> approvedProducts,
+      boolean isDatePhysicalStockCountCompletedEnabled) {
     LOGGER.entry(requisition, products, isDatePhysicalStockCountCompletedEnabled);
     Profiler profiler = new Profiler("REQUISITION_UPDATE_FROM");
     profiler.setLogger(LOGGER);
 
     profiler.start("SET_DRAFT_STATUS_MESSAGE");
-    draftStatusMessage = requisition.draftStatusMessage;
+    this.draftStatusMessage = requisition.draftStatusMessage;
 
     profiler.start("SET_EXTRA_DATA");
     extraData = new ExtraDataEntity(requisition.getExtraData());
@@ -408,9 +405,10 @@ public class Requisition extends BaseTimestampedEntity {
     profiler.start("UPDATE_LINE_ITEMS");
     updateReqLines(requisition.getRequisitionLineItems());
 
-    profiler.start("CALCULATE_AND_VALIDATE_TEMPLATE_FIELDS");
-    calculateAndValidateTemplateFields(requisition, products, approvedProducts,
-        requisitionService, periodService, profiler);
+    if (!emergency) {
+      profiler.start("CALCULATE_AND_VALIDATE_TEMPLATE_FIELDS");
+      calculateAndValidateTemplateFields(this.template, products, approvedProducts);
+    }
 
     profiler.start("UPDATE_TOTAL_COST_AND_PACKS_TO_SHIP");
     updateTotalCostAndPacksToShip(products);
@@ -429,43 +427,6 @@ public class Requisition extends BaseTimestampedEntity {
 
     profiler.stop().log();
     LOGGER.exit();
-  }
-
-  private void calculateAndValidateTemplateFields(
-      Requisition requisition, Map<VersionIdentityDto, OrderableDto> products,
-      Map<VersionIdentityDto, ApprovedProductDto> approvedProducts,
-      RequisitionService requisitionService, PeriodService periodService, Profiler profiler) {
-    if (emergency) {
-      LOGGER.debug("Calculation and validation skipped for emergency requisition "
-          + "with following id: {}", id);
-      return;
-    }
-
-    if (!template.isPopulateStockOnHandFromStockCards()) {
-      calculateAndValidateNonStockTemplateFields(products, approvedProducts);
-      return;
-    }
-
-    ProcessingPeriodDto period = periodService.getPeriod(requisition.getProcessingPeriodId());
-    List<ProcessingPeriodDto> previousPeriods = periodService
-        .findPreviousPeriods(period, template.getNumberOfPeriodsToAverage() - 1);
-
-    List<StockCardRangeSummaryDto> stockCardRangeSummaries =
-        requisitionService.getStockCardRangeSummaries(requisition, period, profiler);
-
-    List<StockCardRangeSummaryDto> stockCardRangeSummariesToAverage;
-    if (previousPeriods.size() > 1) {
-      stockCardRangeSummariesToAverage =
-          requisitionService.getStockCardRangeSummariesToAverage(requisition,
-          period, previousPeriods, profiler);
-    } else {
-      stockCardRangeSummariesToAverage = stockCardRangeSummaries;
-    }
-
-    previousPeriods.add(period);
-
-    calculateAndValidateStockTemplateFields(products, approvedProducts,
-        stockCardRangeSummariesToAverage, stockCardRangeSummaries, previousPeriods);
   }
 
   /**
@@ -670,11 +631,10 @@ public class Requisition extends BaseTimestampedEntity {
 
   /**
    * Submits this requisition.
+   *
    */
   public void submit(Map<VersionIdentityDto, OrderableDto> products, UUID submitter,
-                     boolean skipAuthorize, ProcessingPeriodDto period,
-                     RequisitionService requisitionService, PeriodService periodService,
-                     Profiler profiler) {
+      boolean skipAuthorize) {
     if (!status.isSubmittable()) {
       throw new ValidationMessageException(
           new Message(ERROR_MUST_BE_INITIATED_TO_BE_SUBMMITED, getId()));
@@ -700,7 +660,7 @@ public class Requisition extends BaseTimestampedEntity {
           });
     }
 
-    updateConsumptions(products, period, requisitionService, periodService, profiler);
+    updateConsumptions(products);
     updateTotalCostAndPacksToShip(products);
 
     status = RequisitionStatus.SUBMITTED;
@@ -714,21 +674,17 @@ public class Requisition extends BaseTimestampedEntity {
   }
 
   /**
-   * Authorize this requisition.
+   * Authorize this Requisition.
    *
    */
-  public void authorize(Map<VersionIdentityDto, OrderableDto> products, UUID authorizer,
-                        ProcessingPeriodDto period,
-                        RequisitionService requisitionService, PeriodService periodService,
-                        Profiler profiler) {
+  public void authorize(Map<VersionIdentityDto, OrderableDto> products, UUID authorizer) {
     if (!RequisitionStatus.SUBMITTED.equals(status)) {
       throw new ValidationMessageException(
           new Message(ERROR_MUST_BE_SUBMITTED_TO_BE_AUTHORIZED, getId()));
     }
 
-    updateConsumptions(products, period, requisitionService, periodService, profiler);
+    updateConsumptions(products);
     updateTotalCostAndPacksToShip(products);
-
     prepareRequisitionForApproval(authorizer);
     setModifiedDate(ZonedDateTime.now());
   }
@@ -760,7 +716,7 @@ public class Requisition extends BaseTimestampedEntity {
 
 
   /**
-   * Approves this requisition.
+   * Approves given requisition.
    *
    * @param nodeId      supervisoryNode that has a supply line for the requisition's program.
    * @param products    orderable products that will be used by line items to update packs to ship.
@@ -769,9 +725,7 @@ public class Requisition extends BaseTimestampedEntity {
    * @param approver    user who approves this requisition.
    */
   public void approve(UUID nodeId, Map<VersionIdentityDto, OrderableDto> products,
-                      Collection<SupplyLineDto> supplyLines, UUID approver,
-                      ProcessingPeriodDto period, RequisitionService requisitionService,
-                      PeriodService periodService, Profiler profiler) {
+      Collection<SupplyLineDto> supplyLines, UUID approver) {
     if (isTrue(reportOnly)) {
       status = RequisitionStatus.RELEASED_WITHOUT_ORDER;
     } else {
@@ -783,22 +737,19 @@ public class Requisition extends BaseTimestampedEntity {
       }
     }
 
-    updateConsumptions(products, period, requisitionService, periodService, profiler);
+    updateConsumptions(products);
     updateTotalCostAndPacksToShip(products);
-
     setModifiedDate(ZonedDateTime.now());
+
     statusChanges.add(StatusChange.newStatusChange(this, approver));
   }
 
   /**
-   * Rejects this requisition.
+   * Rejects given requisition.
    */
-  public void reject(Map<VersionIdentityDto, OrderableDto> products, UUID rejector,
-                     ProcessingPeriodDto period, RequisitionService requisitionService,
-                     PeriodService periodService, Profiler profiler) {
+  public void reject(Map<VersionIdentityDto, OrderableDto> products, UUID rejector) {
     status = RequisitionStatus.REJECTED;
-
-    updateConsumptions(products, period, requisitionService, periodService, profiler);
+    updateConsumptions(products);
     updateTotalCostAndPacksToShip(products);
     setModifiedDate(ZonedDateTime.now());
     supervisoryNodeId = null;
@@ -1099,7 +1050,7 @@ public class Requisition extends BaseTimestampedEntity {
         .orElseGet(() -> Money.of(CurrencyUnit.of(currencyCode), 0));
   }
 
-  private void calculateAndValidateNonStockTemplateFields(
+  private void calculateAndValidateTemplateFields(RequisitionTemplate template,
       Map<VersionIdentityDto, OrderableDto> orderables,
       Map<VersionIdentityDto, ApprovedProductDto> approvedProducts) {
     getNonSkippedFullSupplyRequisitionLineItems(orderables)
@@ -1108,48 +1059,7 @@ public class Requisition extends BaseTimestampedEntity {
                 numberOfMonthsInPeriod, approvedProducts));
   }
 
-  private void calculateAndValidateStockTemplateFields(
-      Map<VersionIdentityDto, OrderableDto> orderables,
-      Map<VersionIdentityDto, ApprovedProductDto> approvedProducts,
-      List<StockCardRangeSummaryDto> stockCardRangeSummariesToAverage,
-      List<StockCardRangeSummaryDto> stockCardRangeSummaries,
-      List<ProcessingPeriodDto> periods) {
-    getNonSkippedFullSupplyRequisitionLineItems(orderables)
-        .forEach(line -> {
-          StockCardRangeSummaryDto stockCardRangeSummaryToAverage = findStockCardRangeSummary(
-              stockCardRangeSummariesToAverage, line.getOrderable().getId());
-
-          StockCardRangeSummaryDto stockCardRangeSummary = findStockCardRangeSummary(
-              stockCardRangeSummaries, line.getOrderable().getId());
-
-          line.calculateAndSetStockFields(stockCardRangeSummaryToAverage,
-              stockCardRangeSummary, template, periods, previousRequisitions,
-              numberOfMonthsInPeriod, approvedProducts);
-        });
-  }
-
-  private void updateConsumptions(Map<VersionIdentityDto, OrderableDto> orderables,
-                                  ProcessingPeriodDto period,
-                                  RequisitionService requisitionService,
-                                  PeriodService periodService, Profiler profiler) {
-    if (!getTemplate().isPopulateStockOnHandFromStockCards()) {
-      updateNonStockConsumptions(orderables);
-      return;
-    }
-
-    List<ProcessingPeriodDto> previousPeriods = periodService
-        .findPreviousPeriods(period, getTemplate().getNumberOfPeriodsToAverage() - 1);
-
-    List<StockCardRangeSummaryDto> stockCardRangeSummariesToAverage =
-        requisitionService.getStockCardRangeSummariesToAverage(
-            this, period, previousPeriods, profiler);
-
-    previousPeriods.add(period);
-
-    updateStockConsumptions(orderables, stockCardRangeSummariesToAverage, previousPeriods);
-  }
-
-  private void updateNonStockConsumptions(Map<VersionIdentityDto, OrderableDto> orderables) {
+  private void updateConsumptions(Map<VersionIdentityDto, OrderableDto> orderables) {
     if (template.isColumnInTemplateAndDisplayed(ADJUSTED_CONSUMPTION)) {
       getNonSkippedFullSupplyRequisitionLineItems(orderables)
           .forEach(line -> line.setAdjustedConsumption(
@@ -1161,34 +1071,6 @@ public class Requisition extends BaseTimestampedEntity {
     if (template.isColumnInTemplateAndDisplayed(AVERAGE_CONSUMPTION)) {
       getNonSkippedFullSupplyRequisitionLineItems(orderables).forEach(
           RequisitionLineItem::calculateAndSetAverageConsumption);
-    }
-  }
-
-  private void updateStockConsumptions(
-      Map<VersionIdentityDto, OrderableDto> orderables,
-      List<StockCardRangeSummaryDto> stockCardRangeSummariesToAverage,
-      List<ProcessingPeriodDto> periods) {
-    if (!template.isColumnInTemplateAndDisplayed(ADJUSTED_CONSUMPTION)
-        && !template.isColumnInTemplateAndDisplayed(AVERAGE_CONSUMPTION)) {
-      return;
-    }
-
-    for (RequisitionLineItem line: getNonSkippedFullSupplyRequisitionLineItems(orderables)) {
-      if (template.isColumnInTemplateAndDisplayed(ADJUSTED_CONSUMPTION)) {
-        line.setAdjustedConsumption(
-            LineItemFieldsCalculator.calculateAdjustedConsumption(
-                line, numberOfMonthsInPeriod,
-                this.template.isColumnInTemplateAndDisplayed(ADDITIONAL_QUANTITY_REQUIRED))
-        );
-      }
-
-      if (template.isColumnInTemplateAndDisplayed(AVERAGE_CONSUMPTION)) {
-        StockCardRangeSummaryDto summaryToAverage = findStockCardRangeSummary(
-            stockCardRangeSummariesToAverage, line.getOrderable().getId());
-
-        line.calculateAndSetStockBasedAverageConsumption(summaryToAverage,
-            template, periods, previousRequisitions);
-      }
     }
   }
 

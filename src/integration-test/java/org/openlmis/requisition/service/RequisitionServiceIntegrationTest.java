@@ -99,7 +99,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = RANDOM_PORT)
-@ActiveProfiles({"test", "test-run"})
+@ActiveProfiles("test")
 @DirtiesContext()
 @SuppressWarnings("PMD.TooManyMethods")
 public class RequisitionServiceIntegrationTest {

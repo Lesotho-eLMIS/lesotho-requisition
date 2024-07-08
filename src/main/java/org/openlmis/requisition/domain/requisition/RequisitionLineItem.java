@@ -621,28 +621,6 @@ public class RequisitionLineItem extends BaseEntity {
   }
 
   /**
-   * Calculate and set all calculated stock fields in this requisition line item.
-   */
-  void calculateAndSetStockFields(StockCardRangeSummaryDto stockCardRangeSummaryToAverage,
-                                  StockCardRangeSummaryDto stockCardRangeSummary,
-                                  RequisitionTemplate template,
-                                  List<ProcessingPeriodDto> periods,
-                                  List<Requisition> previousRequisitions,
-                                  Integer numberOfMonthsInPeriod,
-                                  Map<VersionIdentityDto, ApprovedProductDto> approvedProducts) {
-    calculateAndSetStockBasedTotalLossesAndAdjustments(template, stockCardRangeSummary);
-    calculateAndSetStockOnHand(template);
-    calculateAndSetStockBasedTotalConsumedQuantity(template, stockCardRangeSummary);
-    calculateAndSetTotal(template);
-    calculateAndSetAdjustedConsumption(template, numberOfMonthsInPeriod);
-    calculateAndSetStockBasedAverageConsumption(stockCardRangeSummaryToAverage,
-        template, periods, previousRequisitions);
-    calculateAndSetMaximumStockQuantity(template, approvedProducts);
-    calculateAndSetCalculatedOrderQuantity(template, approvedProducts);
-    calculateAndSetCalculatedOrderQuantityIsa(template);
-  }
-
-  /**
    * Sets value to Total Consumed Quantity column based on stock range summaries.
    */
   void calculateAndSetStockBasedTotalConsumedQuantity(RequisitionTemplate template,
@@ -684,12 +662,10 @@ public class RequisitionLineItem extends BaseEntity {
   void calculateAndSetStockBasedAverageConsumption(
       StockCardRangeSummaryDto stockCardRangeSummaryToAverage, RequisitionTemplate template,
       List<ProcessingPeriodDto> periods, List<Requisition> previousRequisitions) {
-    if (template.isColumnInTemplate(AVERAGE_CONSUMPTION)) {
-      setAverageConsumption(calculateStockBasedAverageConsumption(stockCardRangeSummaryToAverage,
-          this.orderable.getId(), template, periods,
-          template.isColumnDisplayed(ADDITIONAL_QUANTITY_REQUIRED)
-              ? getSumOfAdditionalQuantitiesFromPreviousLineItems(previousRequisitions) : null));
-    }
+    setAverageConsumption(calculateStockBasedAverageConsumption(stockCardRangeSummaryToAverage,
+        this.orderable.getId(), template, periods,
+        template.isColumnDisplayed(ADDITIONAL_QUANTITY_REQUIRED)
+            ? getSumOfAdditionalQuantitiesFromPreviousLineItems(previousRequisitions) : null));
   }
 
   /**
