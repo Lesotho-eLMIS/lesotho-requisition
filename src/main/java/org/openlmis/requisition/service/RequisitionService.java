@@ -367,11 +367,54 @@ public class RequisitionService {
     return savedRequisition;
   }
 
+  /**
+   * Reject given requisition if possible.
+   *
+   * @param requisition Requisition to be rejected.
+   */
+  public Requisition rejectAtAuthorization(Requisition requisition,
+                            Map<VersionIdentityDto, OrderableDto> orderables,
+                            List<RejectionDto> rejections, ProcessingPeriodDto period,
+                            RequisitionService requisitionService, PeriodService periodService,
+                            Profiler profiler) {
+    checkIfRejectableAtAuthorization(requisition);
+
+    UserDto currentUser = authenticationHelper.getCurrentUser();
+    UUID userId = currentUser.getId();
+    //validateCanApproveRequisition(requisition, userId).throwExceptionIfHasErrors();
+
+    LOGGER.debug("Requisition rejected: {}", requisition.getId());
+    requisition.reject(orderables, userId, period, requisitionService, periodService, profiler);
+    requisition.setSupervisoryNodeId(null);
+    saveStatusMessage(requisition, currentUser);
+    Requisition savedRequisition = requisitionRepository.save(requisition);
+
+    if (requisition.getTemplate().isRejectionReasonWindowVisible()) {
+      saveRejectionReason(savedRequisition, rejections);
+    }
+
+    return savedRequisition;
+  }
+
+
   private void checkIfRejectable(Requisition requisition) {
     if (!requisition.isApprovable()) {
       throw new ValidationMessageException(new Message(
               ERROR_REQUISITION_MUST_BE_WAITING_FOR_APPROVAL, requisition.getId()));
     }
+
+    if (requisition.hasOriginalRequisitionId()
+            || requisitionRepository.existsByOriginalRequisitionId(requisition.getId())) {
+      throw new ValidationMessageException(new Message(
+              ERROR_REQUISITION_WAS_SPLIT, requisition.getId()));
+    }
+  }
+
+  private void checkIfRejectableAtAuthorization(Requisition requisition) {
+    // if (!requisition.isApprovable()) {
+    //   throw new ValidationMessageException(new Message(
+    //           ERROR_REQUISITION_MUST_BE_WAITING_FOR_APPROVAL, requisition.getId()));
+    // }
 
     if (requisition.hasOriginalRequisitionId()
             || requisitionRepository.existsByOriginalRequisitionId(requisition.getId())) {

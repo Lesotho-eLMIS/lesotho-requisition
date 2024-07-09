@@ -81,6 +81,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class RequisitionController extends BaseRequisitionController {
 
   private static final String BUILD_DTO_LIST = "BUILD_DTO_LIST";
+  private static final String REJECT = "REJECT";
 
   @Autowired
   private RequisitionStatusNotifier requisitionStatusNotifier;
@@ -385,7 +386,7 @@ public class RequisitionController extends BaseRequisitionController {
       HttpServletResponse response,
       @RequestBody (required = false) List<RejectionDto> rejections) {
 
-    Profiler profiler = getProfiler("REJECT", requisitionId);
+    Profiler profiler = getProfiler(REJECT, requisitionId);
 
     Requisition requisition = findRequisition(requisitionId, profiler);
     checkPermission(profiler, () -> permissionService.canApproveRequisition(requisition));
@@ -398,8 +399,51 @@ public class RequisitionController extends BaseRequisitionController {
 
     ProcessingPeriodDto period = periodService.getPeriod(requisition.getProcessingPeriodId());
 
-    profiler.start("REJECT");
+    profiler.start(REJECT);
     Requisition rejectedRequisition = requisitionService.reject(requisition, orderables,
+            rejections, period, requisitionService, periodService, profiler);
+
+    callStatusChangeProcessor(profiler, rejectedRequisition);
+
+    profiler.start("NOTIFY_STATUS_CHANGED");
+    requisitionStatusNotifier
+        .notifyStatusChanged(rejectedRequisition, LocaleContextHolder.getLocale());
+
+    BasicRequisitionDto dto = buildBasicDto(profiler, rejectedRequisition);
+
+    addLocationHeader(request, response, dto.getId(), profiler);
+
+    stopProfiler(profiler, dto);
+    return dto;
+  }
+
+  /**
+   * Rejecting requisition which is waiting for approve.
+   */
+  @PutMapping(RESOURCE_URL + "/{id}/reject_at_authorization")
+  @ResponseStatus(HttpStatus.OK)
+  public BasicRequisitionDto rejectRequisitionAtAuthorization(
+      @PathVariable("id") UUID requisitionId,
+      HttpServletRequest request,
+      HttpServletResponse response,
+      @RequestBody (required = false) List<RejectionDto> rejections) {
+
+    Profiler profiler = getProfiler(REJECT, requisitionId);
+
+    Requisition requisition = findRequisition(requisitionId, profiler);
+    checkPermission(profiler, () -> permissionService.canApproveRequisition(requisition));
+
+    validateIdempotencyKey(request, profiler);
+
+    Map<VersionIdentityDto, OrderableDto> orderables = findOrderables(
+        profiler, () -> getLineItemOrderableIdentities(requisition)
+    );
+
+    ProcessingPeriodDto period = periodService.getPeriod(requisition.getProcessingPeriodId());
+
+    profiler.start(REJECT);
+    Requisition rejectedRequisition = requisitionService
+        .rejectAtAuthorization(requisition, orderables,
             rejections, period, requisitionService, periodService, profiler);
 
     callStatusChangeProcessor(profiler, rejectedRequisition);
