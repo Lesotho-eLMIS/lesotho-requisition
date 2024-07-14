@@ -1,9 +1,7 @@
 {
   "name": "openlmis-consul-registration",
   "version": "0.0.1",
-
-  "devDependencies":
-  {
+  "devDependencies": {
     "uuid": "~3.0.0",
     "raml-parser": "~0.8.0",
     "command-line-args": "~3.0.0",

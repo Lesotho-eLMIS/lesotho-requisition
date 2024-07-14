@@ -40,7 +40,7 @@ targetCompatibility = 1.8
 repositories {
     mavenCentral()
     jcenter()
-    maven { url "https://jaspersoft.jfrog.io/artifactory/third-party-ce-artifacts"}
+    maven { url "https://jaspersoft.jfrog.io/artifactory/third-party-ce-artifacts" }
     maven { url "http://jasperreports.sourceforge.net/maven2/" }
     maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
 }
@@ -153,10 +153,6 @@ tasks.withType(Test) {
     reports.junitXml.destination = file("${testResultsDir}/${name}")
 }
 
-// Usage: gradle generateMigration [-PmigrationName=name_of_migration]
-//          Defaults to 'migration' as migration name
-// Example: gradle generateMigration -PmigrationName=add_column_to_users
-//          Will create a file in migration folder with name yyyyMMddHHmmssSSS_add_column_to_users.sql.
 task generateMigration {
     description 'Creates an empty new file within the src/main/resources/db/migration directory into which developers can add new SQL migration code.'
     doLast {
@@ -197,7 +193,6 @@ checkstyle {
     toolVersion = "8.12"
 }
 
-//NOTE: This plugin requires that this task be named 'sonarqube'. In fact, it is performing SonarCloud analysis.
 sonarqube {
     properties {
         property "sonar.projectKey", "OpenLMIS_openlmis-requisition"
@@ -235,7 +230,9 @@ test {
 }
 
 bootRun {
-    jvmArgs = ["-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"]
+    if (project.hasProperty('debug')) {
+        jvmArgs = ["-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"]
+    }
 }
 
 signing {
@@ -289,8 +286,7 @@ uploadArchives {
                 }
                 scm {
                     connection = 'scm:git:git://github.com/OpenLMIS/openlmis-requisition.git'
-                    developerConnection = 'scm:git:ssh://github.com/OpenLMIS/openlmis-requisition' +
-                            '.git'
+                    developerConnection = 'scm:git:ssh://github.com/OpenLMIS/openlmis-requisition.git'
                     url = 'http://github.com/OpenLMIS/openlmis-requisition/'
                 }
             }
