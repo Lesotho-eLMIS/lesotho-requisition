@@ -359,6 +359,12 @@ public class RequisitionService {
     UUID userId = currentUser.getId();
     validateCanApproveRequisition(requisition, userId).throwExceptionIfHasErrors();
 
+    /* Get supervisory node prior to rejection
+     * so that we can deternine where the requisition
+     * was at the stage of rejection
+     */
+    UUID snNodeId = requisition.getSupervisoryNodeId();
+
     LOGGER.debug("Requisition rejected: {}", requisition.getId());
     requisition.reject(orderables, userId, period, requisitionService, periodService, profiler);
     requisition.setSupervisoryNodeId(null);
@@ -390,24 +396,26 @@ public class RequisitionService {
       saveRejectionReason(savedRequisition, rejections);
     }
 
-    UUID supervisoryNodeId = requisition.getSupervisoryNodeId();
-    if (supervisoryNodeId != null) {
+    // UUID supervisoryNodeId = requisition.getSupervisoryNodeId();
+    if (snNodeId != null) {
       Optional<SupervisoryNodeDto> optionalSupervisoryNode = supervisoryNodeReferenceDataService
-                                                                    .findById(supervisoryNodeId);
+                                                                    .findById(snNodeId);
       if (optionalSupervisoryNode.isPresent()) {
         SupervisoryNodeDto supervisoryNode = optionalSupervisoryNode.get();
-        String nodeName = supervisoryNode.getName();
-        LOGGER.info("The name of the rejecting supervisory node is " + nodeName);
-        if ("Central".equals(nodeName)) {
-          LOGGER.info("The supervisory node name is NDSO: true");
+        String nodeCode = supervisoryNode.getCode();
+        LOGGER.error("The name of the rejecting supervisory node is " + nodeCode);
+        if ("lesotho_SN".equals(nodeCode)) {
+          LOGGER.error("The supervisory node name is NDSO: true");
           requisition.setStatus(RequisitionStatus.AUTHORIZED);
           saveStatusMessage(requisition, currentUser);
          
 
         } else {
-          LOGGER.info("The supervisory node name is NDSO: false");
+          LOGGER.error("The supervisory node name is NDSO: false");
         }
       }
+    } else {
+      LOGGER.error("Hm, the supervisory node was already null");
     }
 
     savedRequisition = requisitionRepository.save(requisition);
