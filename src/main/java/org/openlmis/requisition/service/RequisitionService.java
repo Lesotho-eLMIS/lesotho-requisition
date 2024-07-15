@@ -78,6 +78,7 @@ import org.openlmis.requisition.dto.RejectionDto;
 import org.openlmis.requisition.dto.ReleasableRequisitionDto;
 import org.openlmis.requisition.dto.RequisitionWithSupplyingDepotsDto;
 import org.openlmis.requisition.dto.RightDto;
+import org.openlmis.requisition.dto.SupervisoryNodeDto;
 import org.openlmis.requisition.dto.SupplyLineDto;
 import org.openlmis.requisition.dto.SupportedProgramDto;
 import org.openlmis.requisition.dto.UserDto;
@@ -98,6 +99,7 @@ import org.openlmis.requisition.service.referencedata.IdealStockAmountReferenceD
 import org.openlmis.requisition.service.referencedata.PermissionStringDto;
 import org.openlmis.requisition.service.referencedata.PermissionStrings;
 import org.openlmis.requisition.service.referencedata.RightReferenceDataService;
+import org.openlmis.requisition.service.referencedata.SupervisoryNodeReferenceDataService;
 import org.openlmis.requisition.service.referencedata.SupplyLineReferenceDataService;
 import org.openlmis.requisition.service.referencedata.UserFulfillmentFacilitiesReferenceDataService;
 import org.openlmis.requisition.service.referencedata.UserRoleAssignmentsReferenceDataService;
@@ -178,6 +180,9 @@ public class RequisitionService {
 
   @Autowired
   private SupplyLineReferenceDataService supplyLineReferenceDataService;
+
+  @Autowired
+  private SupervisoryNodeReferenceDataService supervisoryNodeReferenceDataService;
 
   @Autowired
   private RejectionRepository rejectionRepository;
@@ -360,12 +365,56 @@ public class RequisitionService {
     saveStatusMessage(requisition, currentUser);
     Requisition savedRequisition = requisitionRepository.save(requisition);
 
+    /*
+     * NDSO Reject:
+     * (1) Default: requisition returned to initiated state at the facility level
+     * (2) Required: after rejection, requisition should be fast-forwarded to 
+     *  authorised state at DHMT level DHMT Reject:
+     * (1) Default: requisition returned to initiated state at the facility level
+     * (2) Required: maintain the status-quo
+     * Facility Reject:
+     * (1) Default: requisition returned to initiated state at the facility level
+     * (2) Required: maintain the status-quo
+     * Service Point Reject:
+     * (1) Default: requisition returned to initiated state at the service point level
+     * (2) Required: maintain the status-quo
+     * 
+     * Therefore:
+     * 
+     * if requisition is being returned from NDSO:
+     *    fast-forward rejected requisiton to DHMT by automatically authorising it
+     * 
+    */
+
     if (requisition.getTemplate().isRejectionReasonWindowVisible()) {
       saveRejectionReason(savedRequisition, rejections);
     }
 
+    UUID supervisoryNodeId = requisition.getSupervisoryNodeId();
+    if (supervisoryNodeId != null) {
+      Optional<SupervisoryNodeDto> optionalSupervisoryNode = supervisoryNodeReferenceDataService
+                                                                    .findById(supervisoryNodeId);
+      if (optionalSupervisoryNode.isPresent()) {
+        SupervisoryNodeDto supervisoryNode = optionalSupervisoryNode.get();
+        String nodeName = supervisoryNode.getName();
+        LOGGER.info("The name of the rejecting supervisory node is " + nodeName);
+        if ("Central".equals(nodeName)) {
+          LOGGER.info("The supervisory node name is NDSO: true");
+          requisition.setStatus(RequisitionStatus.AUTHORIZED);
+          saveStatusMessage(requisition, currentUser);
+         
+
+        } else {
+          LOGGER.info("The supervisory node name is NDSO: false");
+        }
+      }
+    }
+
+    savedRequisition = requisitionRepository.save(requisition);
+
     return savedRequisition;
   }
+
 
   private void checkIfRejectable(Requisition requisition) {
     if (!requisition.isApprovable()) {

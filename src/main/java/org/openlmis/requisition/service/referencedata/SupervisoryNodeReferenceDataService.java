@@ -18,6 +18,7 @@ package org.openlmis.requisition.service.referencedata;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.openlmis.requisition.dto.SupervisoryNodeDto;
 import org.openlmis.requisition.service.RequestParameters;
@@ -66,4 +67,19 @@ public class SupervisoryNodeReferenceDataService
     }
     return getPage(RequestParameters.init().set("id", ids)).getContent();
   }
+
+  /**
+   * Find a correct supervisory node by the provided uuid.
+   */
+
+  public Optional<SupervisoryNodeDto> findById(UUID id) {
+    if (id == null) {
+      return Optional.empty();
+    }
+    List<SupervisoryNodeDto> result = getPage(RequestParameters.init().set("id", Collections.singletonList(id))).getContent();
+    return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));
+  }
+
+  
+
 }
