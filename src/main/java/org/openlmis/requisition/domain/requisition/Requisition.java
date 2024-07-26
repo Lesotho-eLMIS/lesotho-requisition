@@ -1088,6 +1088,16 @@ public class Requisition extends BaseTimestampedEntity {
     statusChanges.add(StatusChange.newStatusChange(this, user));
   }
 
+  /**
+   * Authorize after rejection at NDSO.
+   *
+   * 
+   */
+  public void authorizeAfterRejection(UUID user) {
+    status = RequisitionStatus.AUTHORIZED;
+    statusChanges.add(StatusChange.newStatusChange(this, user));
+  }
+
   private Money calculateTotalCostForLines(List<RequisitionLineItem> requisitionLineItems) {
     return Optional
         .ofNullable(requisitionLineItems)

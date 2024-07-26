@@ -78,6 +78,7 @@ import org.openlmis.requisition.dto.RejectionDto;
 import org.openlmis.requisition.dto.ReleasableRequisitionDto;
 import org.openlmis.requisition.dto.RequisitionWithSupplyingDepotsDto;
 import org.openlmis.requisition.dto.RightDto;
+import org.openlmis.requisition.dto.SupervisoryNodeDto;
 import org.openlmis.requisition.dto.SupplyLineDto;
 import org.openlmis.requisition.dto.SupportedProgramDto;
 import org.openlmis.requisition.dto.UserDto;
@@ -98,6 +99,7 @@ import org.openlmis.requisition.service.referencedata.IdealStockAmountReferenceD
 import org.openlmis.requisition.service.referencedata.PermissionStringDto;
 import org.openlmis.requisition.service.referencedata.PermissionStrings;
 import org.openlmis.requisition.service.referencedata.RightReferenceDataService;
+import org.openlmis.requisition.service.referencedata.SupervisoryNodeReferenceDataService;
 import org.openlmis.requisition.service.referencedata.SupplyLineReferenceDataService;
 import org.openlmis.requisition.service.referencedata.UserFulfillmentFacilitiesReferenceDataService;
 import org.openlmis.requisition.service.referencedata.UserRoleAssignmentsReferenceDataService;
@@ -178,6 +180,9 @@ public class RequisitionService {
 
   @Autowired
   private SupplyLineReferenceDataService supplyLineReferenceDataService;
+
+  @Autowired
+  private SupervisoryNodeReferenceDataService supervisoryNodeReferenceDataService;
 
   @Autowired
   private RejectionRepository rejectionRepository;
@@ -354,18 +359,71 @@ public class RequisitionService {
     UUID userId = currentUser.getId();
     validateCanApproveRequisition(requisition, userId).throwExceptionIfHasErrors();
 
+    /* Get supervisory node prior to rejection
+     * so that we can deternine where the requisition
+     * was at the stage of rejection
+     */
+    UUID snNodeId = requisition.getSupervisoryNodeId();
+
     LOGGER.debug("Requisition rejected: {}", requisition.getId());
     requisition.reject(orderables, userId, period, requisitionService, periodService, profiler);
     requisition.setSupervisoryNodeId(null);
     saveStatusMessage(requisition, currentUser);
     Requisition savedRequisition = requisitionRepository.save(requisition);
 
+    /*
+     * NDSO Reject:
+     * (1) Default: requisition returned to initiated state at the facility level
+     * (2) Required: after rejection, requisition should be fast-forwarded to 
+     *  authorised state at DHMT level DHMT Reject:
+     * (1) Default: requisition returned to initiated state at the facility level
+     * (2) Required: maintain the status-quo
+     * Facility Reject:
+     * (1) Default: requisition returned to initiated state at the facility level
+     * (2) Required: maintain the status-quo
+     * Service Point Reject:
+     * (1) Default: requisition returned to initiated state at the service point level
+     * (2) Required: maintain the status-quo
+     * 
+     * Therefore:
+     * 
+     * if requisition is being returned from NDSO:
+     *    fast-forward rejected requisiton to DHMT by automatically authorising it
+     * 
+    */
+
     if (requisition.getTemplate().isRejectionReasonWindowVisible()) {
       saveRejectionReason(savedRequisition, rejections);
     }
 
+    // UUID supervisoryNodeId = requisition.getSupervisoryNodeId();
+    if (snNodeId != null) {
+      Optional<SupervisoryNodeDto> optionalSupervisoryNode = supervisoryNodeReferenceDataService
+                                                                    .findById(snNodeId);
+      if (optionalSupervisoryNode.isPresent()) {
+        SupervisoryNodeDto supervisoryNode = optionalSupervisoryNode.get();
+        String nodeCode = supervisoryNode.getCode();
+        LOGGER.error("The name of the rejecting supervisory node is " + nodeCode);
+        if ("lesotho_SN".equals(nodeCode)) {
+          LOGGER.error("The supervisory node name is NDSO: true");
+          //requisition.setStatus(RequisitionStatus.AUTHORIZED);
+          requisition.authorizeAfterRejection(userId);
+          saveStatusMessage(requisition, currentUser);
+         
+
+        } else {
+          LOGGER.error("The supervisory node name is NDSO: false");
+        }
+      }
+    } else {
+      LOGGER.error("Hm, the supervisory node was already null");
+    }
+
+    savedRequisition = requisitionRepository.save(requisition);
+
     return savedRequisition;
   }
+
 
   private void checkIfRejectable(Requisition requisition) {
     if (!requisition.isApprovable()) {
