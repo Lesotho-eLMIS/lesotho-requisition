@@ -406,7 +406,8 @@ public class RequisitionService {
         LOGGER.error("The name of the rejecting supervisory node is " + nodeCode);
         if ("lesotho_SN".equals(nodeCode)) {
           LOGGER.error("The supervisory node name is NDSO: true");
-          requisition.setStatus(RequisitionStatus.AUTHORIZED);
+          //requisition.setStatus(RequisitionStatus.AUTHORIZED);
+          requisition.authorizeAfterRejection(userId);
           saveStatusMessage(requisition, currentUser);
          
 
