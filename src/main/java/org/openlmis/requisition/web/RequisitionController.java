@@ -15,7 +15,10 @@
 
 package org.openlmis.requisition.web;
 
+import static org.apache.commons.lang3.BooleanUtils.isNotTrue;
+
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -29,7 +32,9 @@ import javax.servlet.http.HttpServletResponse;
 import org.openlmis.requisition.domain.RequisitionStatsData;
 import org.openlmis.requisition.domain.RequisitionTemplate;
 import org.openlmis.requisition.domain.requisition.Requisition;
+import org.openlmis.requisition.domain.requisition.RequisitionLineItem;
 import org.openlmis.requisition.domain.requisition.RequisitionStatus;
+import org.openlmis.requisition.domain.requisition.StockData;
 import org.openlmis.requisition.dto.ApprovedProductDto;
 import org.openlmis.requisition.dto.BasicRequisitionDto;
 import org.openlmis.requisition.dto.FacilityDto;
@@ -51,7 +56,13 @@ import org.openlmis.requisition.i18n.MessageKeys;
 import org.openlmis.requisition.repository.custom.DefaultRequisitionSearchParams;
 import org.openlmis.requisition.repository.custom.RequisitionSearchParams;
 import org.openlmis.requisition.service.RequisitionStatusNotifier;
+import org.openlmis.requisition.service.RequisitionTemplateService;
+import org.openlmis.requisition.service.referencedata.ApproveProductsAggregator;
+import org.openlmis.requisition.service.referencedata.ApprovedProductReferenceDataService;
+import org.openlmis.requisition.service.referencedata.FacilityReferenceDataService;
+import org.openlmis.requisition.service.referencedata.ProgramReferenceDataService;
 import org.openlmis.requisition.service.referencedata.SupervisoryNodeReferenceDataService;
+import org.openlmis.requisition.service.stockmanagement.StockOnHandRetrieverBuilderFactory;
 import org.openlmis.requisition.utils.Message;
 import org.openlmis.requisition.utils.Pagination;
 import org.slf4j.profiler.Profiler;
@@ -83,10 +94,26 @@ public class RequisitionController extends BaseRequisitionController {
   private static final String BUILD_DTO_LIST = "BUILD_DTO_LIST";
 
   @Autowired
+  private ApprovedProductReferenceDataService approvedProductReferenceDataService;
+
+  @Autowired
+  private FacilityReferenceDataService facilityReferenceDataService;
+
+  @Autowired
+  private ProgramReferenceDataService programReferenceDataService;
+
+  @Autowired
   private RequisitionStatusNotifier requisitionStatusNotifier;
 
   @Autowired
+  private RequisitionTemplateService requisitionTemplateService;
+
+  @Autowired
   private SupervisoryNodeReferenceDataService supervisoryNodeService;
+
+  @Autowired
+  private StockOnHandRetrieverBuilderFactory stockOnHandRetrieverBuilderFactory;
+
 
   /**
    * Allows creating new requisitions.
@@ -667,6 +694,66 @@ public class RequisitionController extends BaseRequisitionController {
     requisitionService.convertToOrder(list, getCurrentUser(profiler));
 
     stopProfiler(profiler);
+  }
+  
+  /**
+   * Get available approved orderables matching all of provided parameters.
+   *
+   * @param facilityId UUID of the facility to be used as filter
+   * @param pageable   Pageable object that allows client to optionally add "page" (page number)
+   *                   and "size" (page size) query parameters to the request.
+   * @return Page of available approved orderables.
+   */
+  @GetMapping(RESOURCE_URL + "/approvedProducts")
+  @ResponseStatus(HttpStatus.OK)
+   public List<ApprovedProductDto> getApprovedProducts(
+      @RequestParam(required = true) UUID facilityId,
+      Pageable pageable) {
+
+    
+    List<ApprovedProductDto> approvedProductDtos = new ArrayList<>();  
+    boolean reportOnly = false;
+    LocalDate currentDate = LocalDate.now();
+    UUID facilityTypeId = facilityReferenceDataService.findOne(facilityId).getType().getId();
+        
+    for (ProgramDto programDto : programReferenceDataService.findAll()) {
+      ApproveProductsAggregator approvedProducts = approvedProductReferenceDataService
+          .getApprovedProducts(facilityId,programDto.getId());
+
+      RequisitionTemplate requisitionTemplate = requisitionTemplateService.findTemplate(
+          programDto.getId(), facilityTypeId, reportOnly);
+
+      Map<UUID, Integer> orderableSoh = stockOnHandRetrieverBuilderFactory
+            .getInstance(requisitionTemplate, RequisitionLineItem.STOCK_ON_HAND)
+            .forProgram(programDto.getId())
+            .forFacility(facilityId)
+            .forProducts(approvedProducts)
+            .asOfDate(currentDate)
+            .build()
+            .get();
+      Map<UUID, Integer> orderableBeginning = stockOnHandRetrieverBuilderFactory
+            .getInstance(requisitionTemplate, RequisitionLineItem.BEGINNING_BALANCE)
+            .forProgram(programDto.getId())
+            .forFacility(facilityId)
+            .forProducts(approvedProducts)
+            .asOfDate(currentDate)
+            .build()
+            .get();
+      StockData stockData = new StockData(orderableSoh, orderableBeginning);
+
+      // Filter out non-available products for this program
+      for (ApprovedProductDto product : approvedProducts.getFullSupplyProducts()) {
+        UUID orderableId = product.getOrderable().getId();
+
+        if (isNotTrue(stockData.hasDataFor(orderableId))) {
+          continue;
+        }
+        approvedProductDtos.add(product);
+      }
+    }
+
+    return approvedProductDtos;
+
   }
 
   private SupervisoryNodeDto getSupervisoryNodeDto(Profiler profiler, Requisition requisition) {

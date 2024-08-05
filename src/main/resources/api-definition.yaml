@@ -11,6 +11,8 @@ documentation:
 
 schemas:
 
+  - approvedProductDto: !include schemas/approvedProductDto.json
+
   - facilityDto: !include schemas/facilityDto.json
 
   - facilityOperatorDto: !include schemas/facilityOperatorDto.json
@@ -962,6 +964,32 @@ resourceTypes:
                       body:
                         application/json:
                           schema: localizedMessage
+      /approvedProducts:
+          get:
+              is: [ secured ]
+              description: Find periods for initiate requisition.
+              queryParameters:
+                  facilityId:
+                      displayName: facility
+                      type: string
+                      required: true
+                      repeat: false
+              responses:
+                  "200":
+                      body:
+                        application/json:
+                          schema: approvedProductDtoPage
+                  "400":
+                      body:
+                        application/json:
+                            schema: localizedMessage
+                  "403":
+                      headers:
+                        Keep-Alive:
+                      body:
+                        application/json:
+                          schema: localizedMessage
+
 
   /reports/templates/requisitions:
       displayName: Report Template
