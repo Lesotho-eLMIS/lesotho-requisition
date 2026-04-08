@@ -86,6 +86,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.openlmis.requisition.service.EmergencyRequisitionStockValidator;
+import java.util.stream.Collectors;
 
 @SuppressWarnings("PMD.TooManyMethods")
 @RestController
@@ -117,6 +119,11 @@ public class RequisitionController extends BaseRequisitionController {
 
   @Autowired
   private StockOnHandRetrieverBuilderFactory stockOnHandRetrieverBuilderFactory;
+
+  // Validator for checking stock availability before emergency requisition submission
+  @Autowired
+  private EmergencyRequisitionStockValidator emergencyRequisitionStockValidator;
+
 
 
   /**
@@ -253,8 +260,39 @@ public class RequisitionController extends BaseRequisitionController {
     ProgramDto program = findProgram(requisition.getProgramId(), profiler);
 
     profiler.start("SUBMIT");
+
+    // Validate stock availability for emergency requisitions from service points
+    profiler.start("VERIFY_EMERGENCY_STOCK_AVAILABILITY");
+    EmergencyRequisitionStockValidator.StockValidationResult stockValidation =
+            emergencyRequisitionStockValidator.validate(requisition, orderables);
+
+    // Hard block — products with zero stock and no DON fallback
+    if (stockValidation.hasErrors()) {
+      String outOfStock = String.join(", ", stockValidation.getOutOfStockProducts());
+      throw new ValidationMessageException(
+              new Message(MessageKeys.ERROR_PRODUCTS_OUT_OF_STOCK, outOfStock));
+    }
+
     requisition.submit(orderables, getCurrentUser(profiler).getId(),
         program.getSkipAuthorization(), period, requisitionService, periodService, profiler);
+
+    // Attach stock warnings to the response via extraData so frontend can display them
+    if (stockValidation.hasWarnings()) {
+       //Build a readable warning string e.g. "ABA001-TAB001-30 (10 available)"
+      String warningDetails = stockValidation.getInsufficientStockProducts()
+              .entrySet()
+              .stream()
+              .map(e -> e.getKey() + " (" + e.getValue() + " available)")
+              .collect(Collectors.joining(", "));
+      logger.warn("Insufficient stock warning on submission: {}", warningDetails);
+
+       //Get existing extraData, add our warning, then update back
+      Map<String, Object> extraData = requisition.getExtraData() != null
+              ? new java.util.HashMap<>(requisition.getExtraData())
+              : new java.util.HashMap<>();
+      extraData.put("stockWarning", warningDetails);
+      requisition.setExtraData(extraData);
+    }
 
     profiler.start("SAVE");
     requisitionService.saveStatusMessage(requisition, authenticationHelper.getCurrentUser());

@@ -348,4 +348,12 @@ public abstract class MessageKeys {
   private MessageKeys() {
     throw new UnsupportedOperationException();
   }
+
+  // Error key for when products have no stock at the supplying facility during emergency requisition submission
+  public static final String ERROR_PRODUCTS_OUT_OF_STOCK = ERROR_PREFIX
+          + ".submit.productsOutOfStock";
+
+  // Warning key for when requested quantity exceeds available stock at supplying facility
+  public static final String WARNING_PRODUCTS_INSUFFICIENT_STOCK = ERROR_PREFIX
+          + ".submit.productsInsufficientStock";
 }
