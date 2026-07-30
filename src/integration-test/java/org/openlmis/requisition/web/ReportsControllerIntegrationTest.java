@@ -80,6 +80,7 @@ import org.springframework.http.MediaType;
 public class ReportsControllerIntegrationTest extends BaseWebIntegrationTest {
 
   private static final String PRINT_URL = "/api/requisitions/{id}/print";
+  private static final String NDSO_PRINT_URL = "/api/requisitions/{id}/print/ndso";
 
   @Before
   public void setUp() {
@@ -129,6 +130,70 @@ public class ReportsControllerIntegrationTest extends BaseWebIntegrationTest {
         .statusCode(200);
 
     // then
+    assertThat(RAML_ASSERT_MESSAGE, restAssured.getLastReport(), RamlMatchers.hasNoViolations());
+  }
+
+  @Test
+  public void shouldNotPrintNdsoRequisitionWhenItDoesNotExist() {
+    given(requisitionRepository.findById(any(UUID.class))).willReturn(Optional.empty());
+
+    restAssured.given()
+        .header(HttpHeaders.AUTHORIZATION, getTokenHeader())
+        .pathParam("id", UUID.randomUUID())
+        .when()
+        .get(NDSO_PRINT_URL)
+        .then()
+        .statusCode(404);
+
+    assertThat(RAML_ASSERT_MESSAGE, restAssured.getLastReport(), RamlMatchers.hasNoViolations());
+  }
+
+  @Test
+  public void shouldNotPrintNdsoRequisitionBeforeApproval() {
+    Requisition requisition = generateRequisition(RequisitionStatus.AUTHORIZED);
+
+    restAssured.given()
+        .header(HttpHeaders.AUTHORIZATION, getTokenHeader())
+        .pathParam("id", requisition.getId())
+        .when()
+        .get(NDSO_PRINT_URL)
+        .then()
+        .statusCode(400);
+
+    assertThat(RAML_ASSERT_MESSAGE, restAssured.getLastReport(), RamlMatchers.hasNoViolations());
+  }
+
+  @Test
+  public void shouldNotPrintNdsoRequisitionWithoutPermission() {
+    doReturn(ValidationResult.noPermission("requisition.error.noPermission"))
+        .when(permissionService).canViewRequisition(anyUuid());
+
+    restAssured.given()
+        .header(HttpHeaders.AUTHORIZATION, getTokenHeader())
+        .pathParam("id", UUID.randomUUID())
+        .when()
+        .get(NDSO_PRINT_URL)
+        .then()
+        .statusCode(403);
+
+    assertThat(RAML_ASSERT_MESSAGE, restAssured.getLastReport(), RamlMatchers.hasNoViolations());
+  }
+
+  @Test
+  public void shouldPrintApprovedNdsoRequisition() throws Exception {
+    Requisition requisition = generateRequisition(RequisitionStatus.APPROVED);
+    given(jasperReportsViewService.generateNdsoRequisitionReport(requisition))
+        .willReturn(new byte[] {1});
+
+    restAssured.given()
+        .header(HttpHeaders.AUTHORIZATION, getTokenHeader())
+        .pathParam("id", requisition.getId())
+        .when()
+        .get(NDSO_PRINT_URL)
+        .then()
+        .statusCode(200)
+        .contentType(MediaType.APPLICATION_PDF_VALUE);
+
     assertThat(RAML_ASSERT_MESSAGE, restAssured.getLastReport(), RamlMatchers.hasNoViolations());
   }
 

@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
+    name="ndsoRequisition" pageWidth="842" pageHeight="595" orientation="Landscape"
+    columnWidth="786" leftMargin="28" rightMargin="28" topMargin="20" bottomMargin="20"
+    whenNoDataType="AllSectionsNoDetail" whenResourceMissingType="Empty"
+    uuid="cd85d7ba-88dc-47c0-a774-2f948a64be28">
+
+  <style name="Base" fontName="SansSerif" fontSize="9"/>
+  <style name="Header" style="Base" fontSize="9" isBold="true" forecolor="#073B54"
+      backcolor="#CFEAFC" mode="Opaque">
+    <box>
+      <pen lineWidth="0.5" lineColor="#8AA2B8"/>
+    </box>
+  </style>
+  <style name="Cell" style="Base">
+    <box leftPadding="5" rightPadding="5" topPadding="4" bottomPadding="4">
+      <pen lineWidth="0.5" lineColor="#8AA2B8"/>
+    </box>
+  </style>
+
+  <parameter name="report" class="org.openlmis.requisition.dto.NdsoRequisitionReportDto"
+      isForPrompting="false"/>
+
+  <field name="tabId" class="java.lang.String"/>
+  <field name="productName" class="java.lang.String"/>
+  <field name="unitOfIssue" class="java.lang.String"/>
+  <field name="averageMonthlyConsumption" class="java.lang.String"/>
+  <field name="stockOnHand" class="java.lang.String"/>
+  <field name="quantityToOrder" class="java.lang.String"/>
+
+  <title>
+    <band height="190" splitType="Prevent">
+      <image scaleImage="RetainShape" onErrorType="Blank">
+        <reportElement x="0" y="8" width="110" height="74"
+            uuid="51f451d3-dce4-4f10-aa84-d313c837aa78"/>
+        <imageExpression class="net.sf.jasperreports.engine.JRRenderable"><![CDATA[
+          net.sf.jasperreports.renderers.BatikRenderer.getInstance(
+              $P{REPORT_CLASS_LOADER}.getResource("images/lesotho-flag.svg"))
+        ]]></imageExpression>
+      </image>
+
+      <textField isStretchWithOverflow="true">
+        <reportElement x="125" y="12" width="535" height="26"
+            uuid="8b44d719-e962-424c-8164-bc76d29e7346"/>
+        <textElement verticalAlignment="Middle">
+          <font fontName="SansSerif" size="18" isBold="true"/>
+        </textElement>
+        <textFieldExpression><![CDATA[$P{report}.getTitle()]]></textFieldExpression>
+      </textField>
+
+      <staticText>
+        <reportElement x="125" y="39" width="535" height="20" forecolor="#8A6D4B"
+            uuid="68bd7ce6-5354-440c-bfe6-699d5760473b"/>
+        <textElement textAlignment="Center" verticalAlignment="Middle">
+          <font fontName="SansSerif" size="13"/>
+        </textElement>
+        <text><![CDATA[Ministry of Health - SCCU]]></text>
+      </staticText>
+
+      <textField>
+        <reportElement x="675" y="12" width="111" height="24"
+            uuid="0d6710e9-2f26-4075-a359-763a00e9199e"/>
+        <textElement textAlignment="Right" verticalAlignment="Middle">
+          <font fontName="SansSerif" size="12"/>
+        </textElement>
+        <textFieldExpression><![CDATA[$P{report}.getReportingPeriod()]]></textFieldExpression>
+      </textField>
+
+      <staticText>
+        <reportElement x="15" y="105" width="145" height="18"
+            uuid="c08f1b7a-8c03-43c6-ad18-2919cd5bcc3d"/>
+        <textElement><font fontName="SansSerif" size="11"/></textElement>
+        <text><![CDATA[District:]]></text>
+      </staticText>
+      <textField>
+        <reportElement x="165" y="105" width="350" height="18"
+            uuid="f798061f-16d0-43bb-b168-28533aca3d39"/>
+        <textElement><font fontName="SansSerif" size="11"/></textElement>
+        <textFieldExpression><![CDATA[$P{report}.getDistrictName()]]></textFieldExpression>
+      </textField>
+
+      <staticText>
+        <reportElement x="15" y="126" width="145" height="18"
+            uuid="615a5bdc-a41d-4bbf-a5bb-21f9876eeb77"/>
+        <textElement><font fontName="SansSerif" size="11"/></textElement>
+        <text><![CDATA[Facility Name:]]></text>
+      </staticText>
+      <textField>
+        <reportElement x="165" y="126" width="350" height="18"
+            uuid="6aecce63-bab9-4362-9399-f30f50c2a89d"/>
+        <textElement><font fontName="SansSerif" size="11"/></textElement>
+        <textFieldExpression><![CDATA[$P{report}.getFacilityName()]]></textFieldExpression>
+      </textField>
+
+      <staticText>
+        <reportElement x="15" y="147" width="145" height="30"
+            uuid="74871051-ded0-4a09-9089-1636a96ae36c"/>
+        <textElement><font fontName="SansSerif" size="11"/></textElement>
+        <text><![CDATA[Authorising Person(s)
+at DHMT:]]></text>
+      </staticText>
+      <textField isStretchWithOverflow="true">
+        <reportElement x="165" y="147" width="350" height="30"
+            uuid="4055b17b-fec1-4030-b5b0-25fc30f5b0df"/>
+        <textElement verticalAlignment="Middle"><font fontName="SansSerif" size="11"/></textElement>
+        <textFieldExpression><![CDATA[$P{report}.getAuthorisingPerson()]]></textFieldExpression>
+      </textField>
+
+      <staticText>
+        <reportElement x="535" y="147" width="130" height="18"
+            uuid="23fa0d64-e9bb-41e6-9a8a-498413968ca8"/>
+        <textElement><font fontName="SansSerif" size="11"/></textElement>
+        <text><![CDATA[Date of Submission:]]></text>
+      </staticText>
+      <textField>
+        <reportElement x="665" y="147" width="121" height="18" forecolor="#666666"
+            uuid="a24d5c22-9821-49df-b8ae-61faf6749bdd"/>
+        <textElement textAlignment="Right"><font fontName="SansSerif" size="11"/></textElement>
+        <textFieldExpression><![CDATA[$P{report}.getGeneratedDate()]]></textFieldExpression>
+      </textField>
+    </band>
+  </title>
+
+  <columnHeader>
+    <band height="30" splitType="Prevent">
+      <staticText>
+        <reportElement style="Header" x="0" y="0" width="55" height="30"
+            uuid="10cd44eb-0834-4851-b32b-f851443b65a4"/>
+        <textElement textAlignment="Center" verticalAlignment="Middle"/>
+        <text><![CDATA[TAB ID]]></text>
+      </staticText>
+      <staticText>
+        <reportElement style="Header" x="55" y="0" width="295" height="30"
+            uuid="05c12aa9-671c-4aee-91e7-6f1481d456c6"/>
+        <textElement textAlignment="Center" verticalAlignment="Middle"/>
+        <text><![CDATA[PRODUCT NAME]]></text>
+      </staticText>
+      <staticText>
+        <reportElement style="Header" x="350" y="0" width="155" height="30"
+            uuid="ddc19930-aecf-427c-b956-4930734811c4"/>
+        <textElement textAlignment="Center" verticalAlignment="Middle"/>
+        <text><![CDATA[UNIT OF ISSUE]]></text>
+      </staticText>
+      <staticText>
+        <reportElement style="Header" x="505" y="0" width="60" height="30"
+            uuid="36d93b3b-aa28-44fd-a31c-1d1873c05a00"/>
+        <textElement textAlignment="Center" verticalAlignment="Middle"/>
+        <text><![CDATA[AMC]]></text>
+      </staticText>
+      <staticText>
+        <reportElement style="Header" x="565" y="0" width="90" height="30"
+            uuid="f4950a25-f6d0-4fe7-b7d4-1da475ac0cef"/>
+        <textElement textAlignment="Center" verticalAlignment="Middle"/>
+        <text><![CDATA[STOCK ON HAND]]></text>
+      </staticText>
+      <staticText>
+        <reportElement style="Header" x="655" y="0" width="131" height="30"
+            uuid="59833622-2b20-42f8-8e27-42f32cb80248"/>
+        <textElement textAlignment="Center" verticalAlignment="Middle"/>
+        <text><![CDATA[QUANTITY TO ORDER]]></text>
+      </staticText>
+    </band>
+  </columnHeader>
+
+  <detail>
+    <band height="28" splitType="Stretch">
+      <rectangle>
+        <reportElement x="0" y="0" width="786" height="28" backcolor="#F7FBFE"
+            mode="Opaque" stretchType="RelativeToBandHeight"
+            uuid="be3ada1c-129f-4569-b2cc-fb93574b2c5e">
+          <printWhenExpression><![CDATA[$V{REPORT_COUNT}.intValue() % 2 == 0]]></printWhenExpression>
+        </reportElement>
+        <graphicElement><pen lineWidth="0.0"/></graphicElement>
+      </rectangle>
+
+      <textField isStretchWithOverflow="true">
+        <reportElement style="Cell" x="0" y="0" width="55" height="28"
+            stretchType="RelativeToTallestObject"
+            uuid="96e3ba65-15dd-49ba-b01b-faf5bd410010"/>
+        <textElement verticalAlignment="Middle"/>
+        <textFieldExpression><![CDATA[$F{tabId}]]></textFieldExpression>
+      </textField>
+      <textField isStretchWithOverflow="true">
+        <reportElement style="Cell" x="55" y="0" width="295" height="28"
+            stretchType="RelativeToTallestObject"
+            uuid="1fc72298-8df8-4745-9042-f13e723fca66"/>
+        <textElement verticalAlignment="Middle"/>
+        <textFieldExpression><![CDATA[$F{productName}]]></textFieldExpression>
+      </textField>
+      <textField isStretchWithOverflow="true">
+        <reportElement style="Cell" x="350" y="0" width="155" height="28"
+            stretchType="RelativeToTallestObject"
+            uuid="99c70090-a5f5-497c-bfcd-5b20a643dd4d"/>
+        <textElement verticalAlignment="Middle"/>
+        <textFieldExpression><![CDATA[$F{unitOfIssue}]]></textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement style="Cell" x="505" y="0" width="60" height="28"
+            stretchType="RelativeToTallestObject"
+            uuid="1ab86a61-7014-4c34-893d-788162190943"/>
+        <textElement verticalAlignment="Middle"/>
+        <textFieldExpression><![CDATA[$F{averageMonthlyConsumption}]]></textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement style="Cell" x="565" y="0" width="90" height="28"
+            stretchType="RelativeToTallestObject"
+            uuid="2f427c64-7d10-44d6-bc5d-63bb21a186fc"/>
+        <textElement verticalAlignment="Middle"/>
+        <textFieldExpression><![CDATA[$F{stockOnHand}]]></textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement style="Cell" x="655" y="0" width="131" height="28"
+            stretchType="RelativeToTallestObject"
+            uuid="9dbb399a-799e-4669-af88-3b81f99f29fa"/>
+        <textElement verticalAlignment="Middle"/>
+        <textFieldExpression><![CDATA[$F{quantityToOrder}]]></textFieldExpression>
+      </textField>
+    </band>
+  </detail>
+
+  <columnFooter>
+    <band height="12">
+      <rectangle>
+        <reportElement x="0" y="0" width="786" height="12" backcolor="#CFEAFC"
+            mode="Opaque" uuid="113840e1-2137-4be6-b2ae-7fc79bd35872"/>
+        <graphicElement><pen lineWidth="0.5" lineColor="#8AA2B8"/></graphicElement>
+      </rectangle>
+    </band>
+  </columnFooter>
+
+  <pageFooter>
+    <band height="20">
+      <textField>
+        <reportElement x="660" y="6" width="105" height="12" forecolor="#8A6D4B"
+            uuid="c05f541b-a768-4126-a56f-cd1382aca0b2"/>
+        <textElement textAlignment="Right"><font fontName="SansSerif" size="8"/></textElement>
+        <textFieldExpression><![CDATA["Page " + $V{PAGE_NUMBER} + " of"]]></textFieldExpression>
+      </textField>
+      <textField evaluationTime="Report">
+        <reportElement x="765" y="6" width="21" height="12" forecolor="#8A6D4B"
+            uuid="07cbdb00-0512-4d7e-8e0b-59a87f6314fe"/>
+        <textElement><font fontName="SansSerif" size="8"/></textElement>
+        <textFieldExpression><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+      </textField>
+    </band>
+  </pageFooter>
+</jasperReport>

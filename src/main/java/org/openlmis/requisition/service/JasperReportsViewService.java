@@ -59,6 +59,7 @@ import org.openlmis.requisition.domain.requisition.RequisitionStatus;
 import org.openlmis.requisition.dto.FacilityDto;
 import org.openlmis.requisition.dto.GeographicZoneDto;
 import org.openlmis.requisition.dto.MinimalFacilityDto;
+import org.openlmis.requisition.dto.NdsoRequisitionReportDto;
 import org.openlmis.requisition.dto.ProcessingPeriodDto;
 import org.openlmis.requisition.dto.ProgramDto;
 import org.openlmis.requisition.dto.ReportingRateReportDto;
@@ -75,6 +76,7 @@ import org.openlmis.requisition.service.referencedata.ProgramReferenceDataServic
 import org.openlmis.requisition.utils.Message;
 import org.openlmis.requisition.utils.Pagination;
 import org.openlmis.requisition.utils.ReportUtils;
+import org.openlmis.requisition.web.NdsoRequisitionReportDtoBuilder;
 import org.openlmis.requisition.web.ReportingRateReportDtoBuilder;
 import org.openlmis.requisition.web.RequisitionReportDtoBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -89,12 +91,17 @@ public class JasperReportsViewService {
   private static final String REQUISITION_REPORT_DIR = "/jasperTemplates/requisition.jrxml";
   private static final String REQUISITION_LINE_REPORT_DIR =
       "/jasperTemplates/requisitionLines.jrxml";
+  private static final String NDSO_REQUISITION_REPORT_DIR =
+      "/jasperTemplates/ndsoRequisition.jrxml";
 
   @Autowired
   private DataSource replicationDataSource;
 
   @Autowired
   private RequisitionReportDtoBuilder requisitionReportDtoBuilder;
+
+  @Autowired
+  private NdsoRequisitionReportDtoBuilder ndsoRequisitionReportDtoBuilder;
 
   @Autowired
   private FacilityReferenceDataService facilityReferenceDataService;
@@ -204,6 +211,24 @@ public class JasperReportsViewService {
         NumberFormat.getCurrencyInstance(getLocaleFromService()));
 
     return fillAndExportReport(compileReportFromTemplateUrl(REQUISITION_REPORT_DIR), params);
+  }
+
+  /**
+   * Generate an approved requisition report using the NDSO layout.
+   *
+   * @param requisition requisition to print
+   * @return generated PDF bytes
+   * @throws JasperReportViewException if the report cannot be generated
+   */
+  public byte[] generateNdsoRequisitionReport(Requisition requisition)
+      throws JasperReportViewException {
+    NdsoRequisitionReportDto reportDto = ndsoRequisitionReportDtoBuilder.build(requisition);
+
+    Map<String, Object> params = ReportUtils.createParametersMap();
+    params.put(DATASOURCE, reportDto.getLineItems());
+    params.put("report", reportDto);
+
+    return fillAndExportReport(compileReportFromTemplateUrl(NDSO_REQUISITION_REPORT_DIR), params);
   }
 
   /**
