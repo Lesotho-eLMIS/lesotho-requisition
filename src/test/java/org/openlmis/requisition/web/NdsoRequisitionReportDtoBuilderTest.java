@@ -102,8 +102,8 @@ public class NdsoRequisitionReportDtoBuilderTest {
     RequisitionLineItem alphaLine = createLine(null, null, null, false);
     RequisitionLineItem skippedLine = createLine(1, 1, 1L, true);
 
-    zuluOrderable = createOrderable(zuluLine, "Zulu Product", "ARV", "Box");
-    alphaOrderable = createOrderable(alphaLine, "Alpha Product", "ARV", null);
+    zuluOrderable = createOrderable(zuluLine, "Zulu Product", "TB-002");
+    alphaOrderable = createOrderable(alphaLine, "Alpha Product", null);
 
     requisition = new RequisitionDataBuilder()
         .withFacilityId(FACILITY_ID)
@@ -113,8 +113,11 @@ public class NdsoRequisitionReportDtoBuilderTest {
         .withRequisitionLineItems(Arrays.asList(zuluLine, alphaLine, skippedLine))
         .build();
 
+    GeographicZoneDto district = new GeographicZoneDtoDataBuilder().buildAsDto();
+    district.setName("Maseru District");
     GeographicZoneDto zone = new GeographicZoneDtoDataBuilder().buildAsDto();
-    zone.setName("Maseru District");
+    zone.setName("Maseru Urban");
+    zone.setParent(district);
     FacilityDto facility = new FacilityDtoDataBuilder()
         .withId(FACILITY_ID)
         .withName("AHF ART Clinic")
@@ -149,7 +152,7 @@ public class NdsoRequisitionReportDtoBuilderTest {
   public void shouldBuildNdsoReportAndMapLineItems() {
     NdsoRequisitionReportDto result = builder.build(requisition);
 
-    assertEquals("Facility - Monthly NDSO - ART - InformedPush", result.getTitle());
+    assertEquals("Facility - Monthly NDSO - ART - eLMIS", result.getTitle());
     assertEquals("Apr 2026", result.getReportingPeriod());
     assertEquals("Maseru District", result.getDistrictName());
     assertEquals("AHF ART Clinic", result.getFacilityName());
@@ -159,17 +162,31 @@ public class NdsoRequisitionReportDtoBuilderTest {
 
     NdsoRequisitionLineItemDto alpha = result.getLineItems().get(0);
     assertEquals("Alpha Product", alpha.getProductName());
-    assertEquals(NULL_VALUE, alpha.getUnitOfIssue());
+    assertEquals(NULL_VALUE, alpha.getProductCode());
     assertEquals(NULL_VALUE, alpha.getAverageMonthlyConsumption());
     assertEquals(NULL_VALUE, alpha.getStockOnHand());
     assertEquals(NULL_VALUE, alpha.getQuantityToOrder());
 
     NdsoRequisitionLineItemDto zulu = result.getLineItems().get(1);
-    assertEquals("ARV", zulu.getTabId());
-    assertEquals("Box", zulu.getUnitOfIssue());
+    assertEquals("TB-002", zulu.getProductCode());
     assertEquals("101", zulu.getAverageMonthlyConsumption());
     assertEquals("8", zulu.getStockOnHand());
     assertEquals("12", zulu.getQuantityToOrder());
+  }
+
+  @Test
+  public void shouldUseNullDistrictWhenFacilityZoneHasNoParent() {
+    GeographicZoneDto zone = new GeographicZoneDtoDataBuilder().buildAsDto();
+    zone.setName("Facility Zone");
+    FacilityDto facility = new FacilityDtoDataBuilder()
+        .withId(FACILITY_ID)
+        .withGeographicZone(zone)
+        .buildAsDto();
+    when(facilityReferenceDataService.findOne(FACILITY_ID)).thenReturn(facility);
+
+    NdsoRequisitionReportDto result = builder.build(requisition);
+
+    assertEquals(NULL_VALUE, result.getDistrictName());
   }
 
   @Test
@@ -202,15 +219,14 @@ public class NdsoRequisitionReportDtoBuilderTest {
   }
 
   private OrderableDto createOrderable(RequisitionLineItem line, String productName,
-      String tabId, String displayUnit) {
+      String productCode) {
     OrderableDto orderable = new OrderableDtoDataBuilder()
         .withId(line.getOrderable().getId())
         .withVersionNumber(line.getOrderable().getVersionNumber())
+        .withProductCode(productCode)
         .withFullProductName(productName)
         .withProgramOrderable(PROGRAM_ID, true)
         .buildAsDto();
-    orderable.getProgramOrderable(PROGRAM_ID).setOrderableCategoryDisplayName(tabId);
-    orderable.getDispensable().setDisplayUnit(displayUnit);
     return orderable;
   }
 

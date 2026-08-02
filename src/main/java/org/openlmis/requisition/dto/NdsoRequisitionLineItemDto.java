@@ -25,9 +25,8 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class NdsoRequisitionLineItemDto {
-  private String tabId;
+  private String productCode;
   private String productName;
-  private String unitOfIssue;
   private String averageMonthlyConsumption;
   private String stockOnHand;
   private String quantityToOrder;

@@ -38,7 +38,6 @@ import org.openlmis.requisition.dto.NdsoRequisitionReportDto;
 import org.openlmis.requisition.dto.OrderableDto;
 import org.openlmis.requisition.dto.ProcessingPeriodDto;
 import org.openlmis.requisition.dto.ProgramDto;
-import org.openlmis.requisition.dto.ProgramOrderableDto;
 import org.openlmis.requisition.dto.UserDto;
 import org.openlmis.requisition.dto.VersionIdentityDto;
 import org.openlmis.requisition.i18n.MessageKeys;
@@ -99,18 +98,19 @@ public class NdsoRequisitionReportDtoBuilder {
     List<NdsoRequisitionLineItemDto> lineItems = requisition.getRequisitionLineItems()
         .stream()
         .filter(line -> !Boolean.TRUE.equals(line.getSkipped()))
-        .map(line -> toLineItemDto(line, orderables, requisition.getProgramId()))
+        .map(line -> toLineItemDto(line, orderables))
         .sorted(Comparator.comparing(NdsoRequisitionLineItemDto::getProductName,
             String.CASE_INSENSITIVE_ORDER))
         .collect(Collectors.toList());
 
     String districtName = Optional.ofNullable(facility)
         .map(FacilityDto::getGeographicZone)
+        .map(zone -> zone.getParent())
         .map(zone -> zone.getName())
         .orElse(NULL_VALUE);
 
     return new NdsoRequisitionReportDto(
-        "Facility - Monthly NDSO - " + valueOrNull(program.getName()) + " - InformedPush",
+        "Facility - Monthly NDSO - " + valueOrNull(program.getName()) + " - eLMIS",
         formatPeriod(period),
         districtName,
         valueOrNull(facility.getName()),
@@ -121,18 +121,12 @@ public class NdsoRequisitionReportDtoBuilder {
   }
 
   private NdsoRequisitionLineItemDto toLineItemDto(RequisitionLineItem line,
-      Map<VersionIdentityDto, OrderableDto> orderables, java.util.UUID programId) {
+      Map<VersionIdentityDto, OrderableDto> orderables) {
     OrderableDto orderable = orderables.get(new VersionIdentityDto(line.getOrderable()));
-    ProgramOrderableDto programOrderable = null == orderable
-        ? null
-        : orderable.findProgramOrderable(programId).orElse(null);
 
     return new NdsoRequisitionLineItemDto(
-        valueOrNull(null == programOrderable
-            ? null : programOrderable.getOrderableCategoryDisplayName()),
+        valueOrNull(null == orderable ? null : orderable.getProductCode()),
         valueOrNull(null == orderable ? null : orderable.getFullProductName()),
-        valueOrNull(null == orderable || null == orderable.getDispensable()
-            ? null : orderable.getDispensable().getDisplayUnit()),
         valueOrNull(line.getAverageConsumption()),
         valueOrNull(line.getStockOnHand()),
         valueOrNull(line.getPacksToShip())

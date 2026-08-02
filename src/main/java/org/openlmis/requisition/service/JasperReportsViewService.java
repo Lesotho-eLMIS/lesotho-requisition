@@ -51,6 +51,7 @@ import net.sf.jasperreports.engine.JasperReport;
 import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 import net.sf.jasperreports.engine.design.JasperDesign;
 import net.sf.jasperreports.engine.xml.JRXmlLoader;
+import org.apache.commons.io.IOUtils;
 import org.openlmis.requisition.domain.JasperTemplate;
 import org.openlmis.requisition.domain.RequisitionTemplate;
 import org.openlmis.requisition.domain.RequisitionTemplateColumn;
@@ -93,6 +94,7 @@ public class JasperReportsViewService {
       "/jasperTemplates/requisitionLines.jrxml";
   private static final String NDSO_REQUISITION_REPORT_DIR =
       "/jasperTemplates/ndsoRequisition.jrxml";
+  private static final String LESOTHO_FLAG_DIR = "/images/Flag_of_Lesotho.png";
 
   @Autowired
   private DataSource replicationDataSource;
@@ -227,8 +229,20 @@ public class JasperReportsViewService {
     Map<String, Object> params = ReportUtils.createParametersMap();
     params.put(DATASOURCE, reportDto.getLineItems());
     params.put("report", reportDto);
+    params.put("flagImage", loadResource(LESOTHO_FLAG_DIR));
 
     return fillAndExportReport(compileReportFromTemplateUrl(NDSO_REQUISITION_REPORT_DIR), params);
+  }
+
+  private byte[] loadResource(String resourcePath) throws JasperReportViewException {
+    try (InputStream inputStream = getClass().getResourceAsStream(resourcePath)) {
+      if (null == inputStream) {
+        throw new IOException("Resource not found: " + resourcePath);
+      }
+      return IOUtils.toByteArray(inputStream);
+    } catch (IOException ex) {
+      throw new JasperReportViewException(ex, ERROR_IO, ex.getMessage());
+    }
   }
 
   /**

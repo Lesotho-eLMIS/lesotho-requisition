@@ -17,6 +17,7 @@ package org.openlmis.requisition.service;
 
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Matchers.any;
@@ -474,7 +475,7 @@ public class JasperReportsViewServiceTest {
   @Test
   public void generateNdsoRequisitionReportShouldSetParams() throws Exception {
     List<NdsoRequisitionLineItemDto> lineItems = Collections.singletonList(
-        new NdsoRequisitionLineItemDto("ARV", "Product", "Pack", "1", "2", "3"));
+        new NdsoRequisitionLineItemDto("TB-001", "Product", "1", "2", "3"));
     NdsoRequisitionReportDto ndsoReportDto = new NdsoRequisitionReportDto(
         "title", "Apr 2026", "district", "facility", "approver", "2026-07-30", lineItems);
     when(ndsoRequisitionReportDtoBuilder.build(requisition)).thenReturn(ndsoReportDto);
@@ -488,6 +489,7 @@ public class JasperReportsViewServiceTest {
     assertEquals(ndsoReportDto, outputParams.get("report"));
     assertEquals(lineItems, outputParams.get("datasource"));
     assertEquals("pdf", outputParams.get("format"));
+    assertTrue(((byte[]) outputParams.get("flagImage")).length > 0);
   }
 
   private List<FacilityDto> extractFacilitiesFromOutputParams(Map<String, Object> outputParams) {

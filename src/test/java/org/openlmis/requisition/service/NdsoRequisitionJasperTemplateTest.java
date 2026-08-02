@@ -15,15 +15,19 @@
 
 package org.openlmis.requisition.service;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import net.sf.jasperreports.engine.JRPrintImage;
 import net.sf.jasperreports.engine.JasperCompileManager;
 import net.sf.jasperreports.engine.JasperExportManager;
 import net.sf.jasperreports.engine.JasperFillManager;
@@ -41,16 +45,15 @@ public class NdsoRequisitionJasperTemplateTest {
     List<NdsoRequisitionLineItemDto> lineItems = new ArrayList<>();
     for (int i = 0; i < 20; i++) {
       lineItems.add(new NdsoRequisitionLineItemDto(
-          "ARV",
+          "TB-" + i,
           "Product with a sufficiently descriptive name " + i,
-          "1 box (30 tablets)",
           Integer.toString(i),
           Integer.toString(i + 1),
           Integer.toString(i + 2)));
     }
 
     NdsoRequisitionReportDto reportDto = new NdsoRequisitionReportDto(
-        "Facility - Monthly NDSO - ART - InformedPush",
+        "Facility - Monthly NDSO - ART - eLMIS",
         "Apr 2026",
         "Maseru District",
         "AHF ART Clinic",
@@ -59,17 +62,42 @@ public class NdsoRequisitionJasperTemplateTest {
         lineItems);
     Map<String, Object> parameters = new HashMap<>();
     parameters.put("report", reportDto);
+    try (InputStream flag = getClass().getResourceAsStream("/images/Flag_of_Lesotho.png")) {
+      assertNotNull(flag);
+      parameters.put("flagImage", toByteArray(flag));
+    }
 
     try (InputStream template = getClass()
         .getResourceAsStream("/jasperTemplates/ndsoRequisition.jrxml")) {
       assertNotNull(template);
-      JasperReport compiled = JasperCompileManager.compileReport(template);
+      byte[] templateData = toByteArray(template);
+      String templateXml = new String(templateData, StandardCharsets.UTF_8);
+      assertTrue(templateXml.contains("PRODUCT CODE"));
+      assertFalse(templateXml.contains("TAB ID"));
+      assertFalse(templateXml.contains("UNIT OF ISSUE"));
+
+      JasperReport compiled = JasperCompileManager.compileReport(
+          new ByteArrayInputStream(templateData));
       JasperPrint print = JasperFillManager.fillReport(
           compiled, parameters, new JRBeanCollectionDataSource(lineItems));
       byte[] pdf = JasperExportManager.exportReportToPdf(print);
 
       assertTrue(print.getPages().size() > 1);
+      assertTrue(print.getPages().get(0).getElements().stream()
+          .filter(element -> element instanceof JRPrintImage)
+          .map(element -> (JRPrintImage) element)
+          .anyMatch(image -> null != image.getRenderer()));
       assertTrue(new String(pdf, 0, 4, StandardCharsets.US_ASCII).equals("%PDF"));
     }
+  }
+
+  private byte[] toByteArray(InputStream inputStream) throws Exception {
+    ByteArrayOutputStream output = new ByteArrayOutputStream();
+    byte[] buffer = new byte[1024];
+    int length;
+    while ((length = inputStream.read(buffer)) != -1) {
+      output.write(buffer, 0, length);
+    }
+    return output.toByteArray();
   }
 }

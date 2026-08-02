@@ -22,22 +22,21 @@
 
   <parameter name="report" class="org.openlmis.requisition.dto.NdsoRequisitionReportDto"
       isForPrompting="false"/>
+  <parameter name="flagImage" class="byte[]" isForPrompting="false"/>
 
-  <field name="tabId" class="java.lang.String"/>
+  <field name="productCode" class="java.lang.String"/>
   <field name="productName" class="java.lang.String"/>
-  <field name="unitOfIssue" class="java.lang.String"/>
   <field name="averageMonthlyConsumption" class="java.lang.String"/>
   <field name="stockOnHand" class="java.lang.String"/>
   <field name="quantityToOrder" class="java.lang.String"/>
 
   <title>
     <band height="190" splitType="Prevent">
-      <image scaleImage="RetainShape" onErrorType="Blank">
+      <image scaleImage="RetainShape">
         <reportElement x="0" y="8" width="110" height="74"
             uuid="51f451d3-dce4-4f10-aa84-d313c837aa78"/>
-        <imageExpression class="net.sf.jasperreports.engine.JRRenderable"><![CDATA[
-          net.sf.jasperreports.renderers.BatikRenderer.getInstance(
-              $P{REPORT_CLASS_LOADER}.getResource("images/lesotho-flag.svg"))
+        <imageExpression class="java.io.InputStream"><![CDATA[
+          new java.io.ByteArrayInputStream($P{flagImage})
         ]]></imageExpression>
       </image>
 
@@ -126,22 +125,16 @@ at DHMT:]]></text>
   <columnHeader>
     <band height="30" splitType="Prevent">
       <staticText>
-        <reportElement style="Header" x="0" y="0" width="55" height="30"
+        <reportElement style="Header" x="0" y="0" width="90" height="30"
             uuid="10cd44eb-0834-4851-b32b-f851443b65a4"/>
         <textElement textAlignment="Center" verticalAlignment="Middle"/>
-        <text><![CDATA[TAB ID]]></text>
+        <text><![CDATA[PRODUCT CODE]]></text>
       </staticText>
       <staticText>
-        <reportElement style="Header" x="55" y="0" width="295" height="30"
+        <reportElement style="Header" x="90" y="0" width="415" height="30"
             uuid="05c12aa9-671c-4aee-91e7-6f1481d456c6"/>
         <textElement textAlignment="Center" verticalAlignment="Middle"/>
         <text><![CDATA[PRODUCT NAME]]></text>
-      </staticText>
-      <staticText>
-        <reportElement style="Header" x="350" y="0" width="155" height="30"
-            uuid="ddc19930-aecf-427c-b956-4930734811c4"/>
-        <textElement textAlignment="Center" verticalAlignment="Middle"/>
-        <text><![CDATA[UNIT OF ISSUE]]></text>
       </staticText>
       <staticText>
         <reportElement style="Header" x="505" y="0" width="60" height="30"
@@ -176,25 +169,18 @@ at DHMT:]]></text>
       </rectangle>
 
       <textField isStretchWithOverflow="true">
-        <reportElement style="Cell" x="0" y="0" width="55" height="28"
+        <reportElement style="Cell" x="0" y="0" width="90" height="28"
             stretchType="RelativeToTallestObject"
             uuid="96e3ba65-15dd-49ba-b01b-faf5bd410010"/>
         <textElement verticalAlignment="Middle"/>
-        <textFieldExpression><![CDATA[$F{tabId}]]></textFieldExpression>
+        <textFieldExpression><![CDATA[$F{productCode}]]></textFieldExpression>
       </textField>
       <textField isStretchWithOverflow="true">
-        <reportElement style="Cell" x="55" y="0" width="295" height="28"
+        <reportElement style="Cell" x="90" y="0" width="415" height="28"
             stretchType="RelativeToTallestObject"
             uuid="1fc72298-8df8-4745-9042-f13e723fca66"/>
         <textElement verticalAlignment="Middle"/>
         <textFieldExpression><![CDATA[$F{productName}]]></textFieldExpression>
-      </textField>
-      <textField isStretchWithOverflow="true">
-        <reportElement style="Cell" x="350" y="0" width="155" height="28"
-            stretchType="RelativeToTallestObject"
-            uuid="99c70090-a5f5-497c-bfcd-5b20a643dd4d"/>
-        <textElement verticalAlignment="Middle"/>
-        <textFieldExpression><![CDATA[$F{unitOfIssue}]]></textFieldExpression>
       </textField>
       <textField>
         <reportElement style="Cell" x="505" y="0" width="60" height="28"
