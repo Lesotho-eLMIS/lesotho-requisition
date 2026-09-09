@@ -20,6 +20,7 @@ import java.util.UUID;
 import org.openlmis.requisition.domain.requisition.Requisition;
 import org.openlmis.requisition.exception.ContentNotFoundMessageException;
 import org.openlmis.requisition.exception.JasperReportViewException;
+import org.openlmis.requisition.exception.ValidationMessageException;
 import org.openlmis.requisition.i18n.MessageKeys;
 import org.openlmis.requisition.repository.RequisitionRepository;
 import org.openlmis.requisition.service.JasperReportsViewService;
@@ -69,6 +70,36 @@ public class ReportsController extends BaseController {
         .ok()
         .contentType(new MediaType("application", "pdf", StandardCharsets.UTF_8))
         .header("Content-Disposition", "inline; filename=requisition" + id.toString() + ".pdf")
+        .body(bytes);
+  }
+
+  /**
+   * Print out an approved requisition using the NDSO layout.
+   *
+   * @param id The UUID of the requisition to print
+   * @return PDF representation of the requisition
+   */
+  @RequestMapping(value = "/requisitions/{id}/print/ndso", method = RequestMethod.GET)
+  @ResponseBody
+  public ResponseEntity<byte[]> printNdso(@PathVariable("id") UUID id)
+      throws JasperReportViewException {
+    permissionService.canViewRequisition(id).throwExceptionIfHasErrors();
+
+    Requisition requisition = requisitionRepository.findById(id)
+        .orElseThrow(() -> new ContentNotFoundMessageException(
+            new Message(MessageKeys.ERROR_REQUISITION_NOT_FOUND, id)));
+
+    if (null == requisition.getStatus() || !requisition.getStatus().isApproved()) {
+      throw new ValidationMessageException(
+          new Message(MessageKeys.ERROR_NDSO_PRINT_REQUISITION_MUST_BE_APPROVED, id));
+    }
+
+    byte[] bytes = jasperReportsViewService.generateNdsoRequisitionReport(requisition);
+
+    return ResponseEntity
+        .ok()
+        .contentType(new MediaType("application", "pdf", StandardCharsets.UTF_8))
+        .header("Content-Disposition", "inline; filename=ndso-requisition-" + id + ".pdf")
         .body(bytes);
   }
 }

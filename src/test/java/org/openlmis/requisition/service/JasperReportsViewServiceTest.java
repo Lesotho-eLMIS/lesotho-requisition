@@ -17,6 +17,7 @@ package org.openlmis.requisition.service;
 
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Matchers.any;
@@ -73,6 +74,8 @@ import org.openlmis.requisition.dto.FacilityDto;
 import org.openlmis.requisition.dto.GeographicLevelDto;
 import org.openlmis.requisition.dto.GeographicZoneDto;
 import org.openlmis.requisition.dto.MinimalFacilityDto;
+import org.openlmis.requisition.dto.NdsoRequisitionLineItemDto;
+import org.openlmis.requisition.dto.NdsoRequisitionReportDto;
 import org.openlmis.requisition.dto.ProcessingPeriodDto;
 import org.openlmis.requisition.dto.ProgramDto;
 import org.openlmis.requisition.dto.RequisitionReportDto;
@@ -85,6 +88,7 @@ import org.openlmis.requisition.service.referencedata.GeographicZoneReferenceDat
 import org.openlmis.requisition.service.referencedata.PeriodReferenceDataService;
 import org.openlmis.requisition.service.referencedata.ProgramReferenceDataService;
 import org.openlmis.requisition.testutils.DtoGenerator;
+import org.openlmis.requisition.web.NdsoRequisitionReportDtoBuilder;
 import org.openlmis.requisition.web.ReportingRateReportDtoBuilder;
 import org.openlmis.requisition.web.RequisitionReportDtoBuilder;
 import org.springframework.data.domain.Page;
@@ -136,6 +140,9 @@ public class JasperReportsViewServiceTest {
 
   @Mock
   private RequisitionReportDtoBuilder requisitionReportDtoBuilder;
+
+  @Mock
+  private NdsoRequisitionReportDtoBuilder ndsoRequisitionReportDtoBuilder;
 
   @Mock
   private RequisitionLineItem lineItem1;
@@ -463,6 +470,26 @@ public class JasperReportsViewServiceTest {
     assertEquals(createDecimalFormat(), outputParams.get("decimalFormat"));
     assertEquals(NumberFormat.getCurrencyInstance(locale),
         outputParams.get("currencyDecimalFormat"));
+  }
+
+  @Test
+  public void generateNdsoRequisitionReportShouldSetParams() throws Exception {
+    List<NdsoRequisitionLineItemDto> lineItems = Collections.singletonList(
+        new NdsoRequisitionLineItemDto("TB-001", "Product", "1", "2", "3"));
+    NdsoRequisitionReportDto ndsoReportDto = new NdsoRequisitionReportDto(
+        "title", "Apr 2026", "district", "facility", "approver", "2026-07-30", lineItems);
+    when(ndsoRequisitionReportDtoBuilder.build(requisition)).thenReturn(ndsoReportDto);
+
+    byte[] reportData = service.generateNdsoRequisitionReport(requisition);
+    ArgumentCaptor<Map<String, Object>> paramArg = ArgumentCaptor.forClass(Map.class);
+    verify(service).fillAndExportReport(any(JasperReport.class), paramArg.capture());
+    Map<String, Object> outputParams = paramArg.getValue();
+
+    assertEquals(expectedReportData, reportData);
+    assertEquals(ndsoReportDto, outputParams.get("report"));
+    assertEquals(lineItems, outputParams.get("datasource"));
+    assertEquals("pdf", outputParams.get("format"));
+    assertTrue(((byte[]) outputParams.get("flagImage")).length > 0);
   }
 
   private List<FacilityDto> extractFacilitiesFromOutputParams(Map<String, Object> outputParams) {

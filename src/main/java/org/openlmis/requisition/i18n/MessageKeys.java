@@ -62,6 +62,8 @@ public abstract class MessageKeys {
       + ".reject.requisitionWasSplit";
   public static final String ERROR_REQUISITION_MUST_BE_APPROVED = ERROR_PREFIX
       + ".release.requisitionMustBeApproved";
+  public static final String ERROR_NDSO_PRINT_REQUISITION_MUST_BE_APPROVED = ERROR_PREFIX
+      + ".print.ndso.requisitionMustBeApproved";
   public static final String ERROR_SKIP_FAILED_EMERGENCY = ERROR_PREFIX
       + ".canNotSkipPeriod.emergency";
   public static final String ERROR_PROGRAM_DOES_NOT_ALLOW_SKIP = ERROR_PREFIX
