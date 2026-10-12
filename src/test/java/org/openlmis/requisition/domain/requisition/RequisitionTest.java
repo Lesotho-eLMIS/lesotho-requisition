@@ -281,7 +281,7 @@ public class RequisitionTest {
   }
 
   @Test
-  public void shouldInApprovalRequisitionIfItsStatusIsAuthorizedAndParentNodeExists() {
+  public void shouldApproveRequisitionIfItsStatusIsAuthorizedAndParentNodeExists() {
     requisition.setTemplate(mock(RequisitionTemplate.class));
     requisition.setStatus(RequisitionStatus.AUTHORIZED);
     SupervisoryNodeDto parentNode = mockSupervisoryParentNode(UUID.randomUUID());
@@ -290,11 +290,11 @@ public class RequisitionTest {
         UUID.randomUUID(), mock(ProcessingPeriodDto.class),
         mock(RequisitionService.class), mock(PeriodService.class), mock(Profiler.class));
 
-    assertEquals(requisition.getStatus(), RequisitionStatus.IN_APPROVAL);
+    assertEquals(RequisitionStatus.APPROVED, requisition.getStatus());
   }
 
   @Test
-  public void shouldInApprovalRequisitionIfItsStatusIsInApprovalAndParentNodeExists() {
+  public void shouldApproveRequisitionIfItsStatusIsInApprovalAndParentNodeExists() {
     requisition.setTemplate(mock(RequisitionTemplate.class));
     requisition.setStatus(RequisitionStatus.IN_APPROVAL);
     SupervisoryNodeDto parentNode = mockSupervisoryParentNode(UUID.randomUUID());
@@ -303,7 +303,7 @@ public class RequisitionTest {
         UUID.randomUUID(), mock(ProcessingPeriodDto.class),
         mock(RequisitionService.class), mock(PeriodService.class), mock(Profiler.class));
 
-    assertEquals(requisition.getStatus(), RequisitionStatus.IN_APPROVAL);
+    assertEquals(RequisitionStatus.APPROVED, requisition.getStatus());
   }
 
   @Test
